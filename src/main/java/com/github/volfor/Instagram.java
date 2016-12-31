@@ -35,7 +35,7 @@ public class Instagram {
 
     private List<Cookie> cookies = new ArrayList<>();
     private String loginSessionCookies;
-    private JSONObject lastJson;
+    public JSONObject lastJson;
 
     private static OkHttpClient httpClient;
 
@@ -125,6 +125,22 @@ public class Instagram {
 
     private void getRecentActivity() {
         sendRequest("news/inbox/?", null);
+    }
+
+    public void getFeedByTag(String tag) {
+        sendRequest("feed/tag/" + tag + "/?rank_token=" + rankToken + "&ranked_content=true&", null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void like(long mediaId) {
+        JSONObject data = new JSONObject();
+        data.put("_uuid", uuid);
+        data.put("_uid", usernameId);
+        data.put("_csrftoken", token);
+        data.put("media_id", mediaId);
+
+        sendRequest("media/" + mediaId + "/like/", generateSignature(data.toJSONString()));
+        System.out.println("Liked!");
     }
 
     private void setUser(String username, String password) {
