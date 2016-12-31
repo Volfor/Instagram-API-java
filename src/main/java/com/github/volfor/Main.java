@@ -10,10 +10,13 @@ public class Main {
         instagram.login(false);
 
         instagram.getFeedByTag("cat");
-        JSONObject media_items = instagram.lastJson;
+        JSONObject firstMedia = (JSONObject) ((JSONArray) instagram.lastJson.get("ranked_items")).get(0);
 
-        long mediaId = (long) ((JSONObject) ((JSONArray) media_items.get("ranked_items")).get(0)).get("pk");
+        long mediaId = (long) firstMedia.get("pk");
         instagram.like(mediaId);
+
+        long usernameId = (long) ((JSONObject) firstMedia.get("user")).get("pk");
+        instagram.getUserFollowers(usernameId, null);
     }
 
 }

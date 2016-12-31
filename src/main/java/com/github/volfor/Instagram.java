@@ -143,6 +143,14 @@ public class Instagram {
         System.out.println("Liked!");
     }
 
+    public void getUserFollowers(long usernameId, String maxid) {
+        if (maxid != null && !maxid.isEmpty()) {
+            sendRequest("friendships/" + usernameId + "/followers/?rank_token=" + rankToken, null);
+        } else {
+            sendRequest("friendships/" + usernameId + "/followers/?rank_token=" + rankToken + "&max_id=" + maxid, null);
+        }
+    }
+
     private void setUser(String username, String password) {
         this.username = username;
         this.password = password;
@@ -235,6 +243,8 @@ public class Instagram {
                 System.err.println("Request return " + response.code() + " error!");
 
                 if (!isLoggedIn) {
+                    System.out.printf(response.body().string());
+
                     throw new NotLoggedInException();
                 }
             }
