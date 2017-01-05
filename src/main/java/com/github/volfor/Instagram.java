@@ -1,25 +1,22 @@
 package com.github.volfor;
 
+import com.github.volfor.helpers.Json;
 import okhttp3.*;
-import org.apache.commons.codec.binary.Hex;
+import okhttp3.logging.HttpLoggingInterceptor;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 import static com.github.volfor.Constants.*;
+import static com.github.volfor.Utils.*;
 
 public class Instagram {
 
@@ -41,6 +38,7 @@ public class Instagram {
 
     static {
         httpClient = new OkHttpClient.Builder()
+                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BASIC))
                 .cookieJar(new CookieJar() {
                     private final HashMap<HttpUrl, List<Cookie>> cookieStore = new HashMap<>();
 
@@ -63,7 +61,6 @@ public class Instagram {
         setUser(username, password);
     }
 
-    @SuppressWarnings("unchecked")
     public void login(boolean force) {
         if (!isLoggedIn || force) {
             // if you need proxy make something like this:
@@ -71,16 +68,17 @@ public class Instagram {
             // httpClient = httpClient.newBuilder().proxy(proxy).build();
 
             if (sendRequest("si/fetch_headers/?challenge_type=signup&guid=" + generateUUID(false), null)) {
-                JSONObject data = new JSONObject();
-                data.put("phone_id", generateUUID(true));
-                data.put("_csrftoken", getCookie(cookies, "csrftoken").value());
-                data.put("username", username);
-                data.put("guid", uuid);
-                data.put("device_id", deviceId);
-                data.put("password", password);
-                data.put("login_attempt_count", "0");
+                Json data = new Json.Builder()
+                        .put("phone_id", generateUUID(true))
+                        .put("_csrftoken", getCookie(cookies, "csrftoken").value())
+                        .put("username", username)
+                        .put("guid", uuid)
+                        .put("device_id", deviceId)
+                        .put("password", password)
+                        .put("login_attempt_count", "0")
+                        .build();
 
-                if (sendRequest("accounts/login/", generateSignature(data.toJSONString()))) {
+                if (sendRequest("accounts/login/", generateSignature(data))) {
                     isLoggedIn = true;
                     loginSessionCookies = getCookieString(cookies);
                     usernameId = (long) ((JSONObject) lastJson.get("logged_in_user")).get("pk");
@@ -99,16 +97,16 @@ public class Instagram {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void syncFeatures() {
-        JSONObject data = new JSONObject();
-        data.put("_uuid", uuid);
-        data.put("_uid", usernameId);
-        data.put("id", usernameId);
-        data.put("_csrftoken", token);
-        data.put("experiments", EXPERIMENTS);
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("id", usernameId)
+                .put("_csrftoken", token)
+                .put("experiments", EXPERIMENTS)
+                .build();
 
-        sendRequest("qe/sync/", generateSignature(data.toJSONString()));
+        sendRequest("qe/sync/", generateSignature(data));
     }
 
     private void autoCompleteUserList() {
@@ -131,15 +129,15 @@ public class Instagram {
         sendRequest("feed/tag/" + tag + "/?rank_token=" + rankToken + "&ranked_content=true&", null);
     }
 
-    @SuppressWarnings("unchecked")
     public void like(long mediaId) {
-        JSONObject data = new JSONObject();
-        data.put("_uuid", uuid);
-        data.put("_uid", usernameId);
-        data.put("_csrftoken", token);
-        data.put("media_id", mediaId);
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .put("media_id", mediaId)
+                .build();
 
-        sendRequest("media/" + mediaId + "/like/", generateSignature(data.toJSONString()));
+        sendRequest("media/" + mediaId + "/like/", generateSignature(data));
         System.out.println("Liked!");
     }
 
@@ -151,60 +149,119 @@ public class Instagram {
         }
     }
 
+    /* TODO check this features */
+
+    public void megaphoneLog() {
+        sendRequest("megaphone/log/", null);
+    }
+
+    public void expose() {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("id", usernameId)
+                .put("_csrftoken", token)
+                .put("experiment", "ig_android_profile_contextual_feed")
+                .build();
+
+        sendRequest("qe/expose/", generateSignature(data));
+    }
+
+    public void logout() {
+        sendRequest("accounts/logout/", null);
+    }
+
+    public void uploadPhoto(String filename, String caption, String uploadId) {
+        if (uploadId == null) {
+            uploadId = String.valueOf(System.currentTimeMillis());
+        }
+
+        try {
+            File photo = new File(filename);
+            RequestBody body = RequestBody.create(MediaType.parse("application/octet-stream"), photo);
+
+            RequestBody multipart = new MultipartBody.Builder(uuid)
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("_uuid", uuid)
+                    .addFormDataPart("_csrftoken", token)
+                    .addFormDataPart("upload_id", uploadId)
+                    .addFormDataPart("image_compression", "{\"lib_name\":\"jt\",\"lib_version\":\"1.3.0\",\"quality\":\"87\"}")
+                    .addFormDataPart("photo", "pending_media_" + uploadId + ".jpg", body)
+                    .build();
+
+            Request request = new Request.Builder()
+                    .header("X-IG-Capabilities", "3Q4=")
+                    .header("X-IG-Connection-Type", "WIFI")
+                    .header("Cookie2", "$Version=1")
+                    .header("Accept-Language", "en-US")
+                    .header("Accept-Encoding", "gzip, deflate")
+                    .header("Content-type", multipart.contentType().toString())
+                    .header("Connection", "close")
+                    .header("User-Agent", USER_AGENT)
+                    .url(API_URL + "upload/photo/")
+                    .post(multipart)
+                    .build();
+
+            request = addSessionCookies(request);
+
+            Response response = httpClient.newCall(request).execute();
+            if (response.code() == 200) {
+                if (configure(uploadId, filename, caption)) {
+                    expose();
+                }
+            }
+            System.out.println(response.code() + ": " + response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean configure(String uploadId, String filename, String caption) throws IOException {
+        BufferedImage bimage = ImageIO.read(new File(filename));
+        int w = bimage.getWidth();
+        int h = bimage.getHeight();
+
+        Json edits = new Json.Builder()
+                .put("crop_original_size", "[" + w * 1.0 + "," + h * 1.0 + "]")
+                .put("crop_center", "[0.0, 0.0]")
+                .put("crop_zoom", 1.0)
+                .build();
+
+        Json extra = new Json.Builder()
+                .put("source_width", w)
+                .put("source_height", h)
+                .build();
+
+        Json data = new Json.Builder()
+                .put("_csrftoken", token)
+                .put("media_folder", "Instagram")
+                .put("source_type", 4)
+                .put("_uid", usernameId)
+                .put("_uuid", uuid)
+                .put("caption", caption)
+                .put("upload_id", uploadId)
+                .put("device", getDeviceSetting())
+                .put("edits", edits)
+                .put("extra", extra)
+                .build();
+
+        return sendRequest("media/configure/?", generateSignature(data));
+    }
+
+    private Request addSessionCookies(Request request) {
+        if (loginSessionCookies != null && !loginSessionCookies.isEmpty()) {
+            request = request.newBuilder()
+                    .addHeader("Cookie", loginSessionCookies)
+                    .build();
+        }
+
+        return request;
+    }
+
     private void setUser(String username, String password) {
         this.username = username;
         this.password = password;
         this.uuid = generateUUID(true);
-    }
-
-    private String generateUUID(boolean type) {
-        String generatedUuid = UUID.randomUUID().toString();
-        return type ? generatedUuid : generatedUuid.replace("-", "");
-    }
-
-    private String generateDeviceId(String seed) {
-        String volatileSeed = "12345";
-        return "android-" + getHexdigest(seed, volatileSeed).substring(0, 16);
-    }
-
-    private String generateSignature(String data) {
-        try {
-            String encodedData = URLEncoder.encode(data, "UTF-8");
-
-            Mac hmac = Mac.getInstance("HmacSHA256");
-            hmac.init(new SecretKeySpec(IG_SIG_KEY.getBytes("UTF-8"), "HmacSHA256"));
-            String encodedHex = Hex.encodeHexString(hmac.doFinal(data.getBytes("UTF-8")));
-
-            return "ig_sig_key_version=" + SIG_KEY_VERSION + "&signed_body=" + encodedHex + "." + encodedData;
-        } catch (UnsupportedEncodingException | NoSuchAlgorithmException | InvalidKeyException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    private String getHexdigest(String s1, String s2) {
-        StringBuilder sb = new StringBuilder();
-
-        try {
-            byte[] a = s1.getBytes("UTF-8");
-            byte[] b = s2.getBytes("UTF-8");
-            byte[] c = new byte[a.length + b.length];
-
-            System.arraycopy(a, 0, c, 0, b.length);
-            System.arraycopy(b, 0, c, a.length, b.length);
-
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            md.update(c);
-
-            for (byte bt : md.digest()) {
-                sb.append(String.format("%02x", bt & 0xff));
-            }
-        } catch (UnsupportedEncodingException | NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-
-        return sb.toString();
     }
 
     private boolean sendRequest(String endpoint, String post) {
@@ -220,11 +277,7 @@ public class Instagram {
                 .url(endpoint)
                 .build();
 
-        if (loginSessionCookies != null && !loginSessionCookies.isEmpty()) {
-            request = request.newBuilder()
-                    .addHeader("Cookie", loginSessionCookies)
-                    .build();
-        }
+        request = addSessionCookies(request);
 
         if (post != null) { //POST
             request = request.newBuilder()
@@ -238,6 +291,7 @@ public class Instagram {
             if (response.code() == 200) {
                 cookies = httpClient.cookieJar().loadForRequest(HttpUrl.parse(endpoint));
                 lastJson = (JSONObject) new JSONParser().parse(response.body().string());
+
                 return true;
             } else {
                 System.err.println("Request return " + response.code() + " error!");
@@ -253,28 +307,6 @@ public class Instagram {
         }
 
         return false;
-    }
-
-    private Cookie getCookie(List<Cookie> cookies, String name) {
-        for (Cookie c : cookies) {
-            if (c != null && c.name().equals(name)) {
-                return c;
-            }
-        }
-
-        return null;
-    }
-
-    private String getCookieString(List<Cookie> cookies) {
-        String s = "";
-        if (!cookies.isEmpty()) {
-            for (Cookie c : cookies) {
-                s += c.name() + "=" + c.value() + "; ";
-            }
-            s = s.substring(0, s.length() - 2);
-        }
-
-        return s;
     }
 
 }
