@@ -1,8 +1,11 @@
 apply plugin: 'java'
+apply plugin: 'maven'
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
+
+group = 'com.github.volfor'
 
 dependencies {
     compile 'commons-codec:commons-codec:1.8'
