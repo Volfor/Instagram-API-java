@@ -1,7 +1,6 @@
 .gradle/
 .idea/
 build/
-gradle*
 local.properties
 src/main/java/com/github/volfor/Experiments.java
 src/main/resources/
