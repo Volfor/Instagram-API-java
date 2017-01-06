@@ -2,7 +2,6 @@ package com.github.volfor;
 
 import com.github.volfor.helpers.Json;
 import okhttp3.*;
-import okhttp3.logging.HttpLoggingInterceptor;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -261,6 +260,208 @@ public class Instagram {
         }
 
         return request;
+    }
+
+    public void editMedia(long mediaId, String captionText) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .put("caption_text", captionText)
+                .build();
+
+        sendRequest("media/" + mediaId + "/edit_media/", generateSignature(data));
+    }
+
+    /* TODO check this features*/
+
+    public void removeSelftag(long mediaId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("media/" + mediaId + "/remove/", generateSignature(data));
+    }
+
+    public void mediaInfo(long mediaId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .put("media_id", mediaId)
+                .build();
+
+        sendRequest("media/" + mediaId + "/info/", generateSignature(data));
+    }
+
+    public void deleteMedia(long mediaId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .put("media_id", mediaId)
+                .build();
+
+        sendRequest("media/" + mediaId + "/delete/", generateSignature(data));
+    }
+
+    public void changePassword(String newPassword) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .put("old_password", password)
+                .put("new_password1", newPassword)
+                .put("new_password2", newPassword)
+                .build();
+
+        sendRequest("accounts/change_password/", generateSignature(data));
+    }
+
+    public void explore() {
+        sendRequest("discover/explore/", null);
+    }
+
+    public void comment(long mediaId, String commentText) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .put("comment_text", commentText)
+                .build();
+
+        sendRequest("media/" + mediaId + "/comment/", generateSignature(data));
+    }
+
+    public void deleteComment(long mediaId, long commentId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("media/" + mediaId + "/comment/" + commentId + "/delete/", generateSignature(data));
+    }
+
+    public void removeProfilePicture() {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("accounts/remove_profile_picture/", generateSignature(data));
+    }
+
+    public void setPrivateAccount() {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("accounts/set_private/", generateSignature(data));
+    }
+
+    public void setPublicAccount() {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("accounts/set_public/", generateSignature(data));
+    }
+
+    public void getProfileData() {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("accounts/current_user/?edit=true", generateSignature(data));
+    }
+
+    public void editProfile(String url, String phone, String name, String biography, String email, String gender) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .put("external_url", url)
+                .put("phone_number", phone)
+                .put("username", username)
+                .put("full_name", name)
+                .put("biography", biography)
+                .put("email", email)
+                .put("gender", gender)
+                .build();
+
+        sendRequest("accounts/edit_profile/", generateSignature(data));
+    }
+
+    public void getUsernameInfo(long usernameId) {
+        sendRequest("users/" + usernameId + "/info/", null);
+    }
+
+    public void getSelfUsernameInfo() {
+        getUsernameInfo(usernameId);
+    }
+
+    public void getFollowingRecentActivity() {
+        sendRequest("news/?", null);
+    }
+
+    public void getUserTags(long usernameId) {
+        sendRequest("usertags/" + usernameId + "/feed/?rank_token=" + rankToken + "&ranked_content=true&", null);
+    }
+
+    public void getSelfUserTags() {
+        getUserTags(usernameId);
+    }
+
+    public void getMediaLikers(long mediaId) {
+        sendRequest("media/" + mediaId + "/likers/?", null);
+    }
+
+    public void getGeoMedia(long usernameId) {
+        sendRequest("maps/user/" + usernameId + "/", null);
+    }
+
+    public void getSelfGeoMedia() {
+        getGeoMedia(usernameId);
+    }
+
+    public void fbUserSearch(String query) {
+        sendRequest("fbsearch/topsearch/?context=blended&query=" + query + "&rank_token=" + rankToken, null);
+    }
+
+    public void searchUsers(String query) {
+        sendRequest("users/search/?ig_sig_key_version=" + SIG_KEY_VERSION + "&is_typeahead=true&query="
+                + query + "&rank_token=" + rankToken, null);
+    }
+
+    public void searchUsername(String usernameName) {
+        sendRequest("users/" + usernameName + "/usernameinfo/", null);
+    }
+
+    public void syncFromAdressBook(JSONObject contacts) {
+        sendRequest("address_book/link/?include=extra_display_name,thumbnails", "contacts=" + contacts.toJSONString());
+    }
+
+    public void searchTags(String query) {
+        sendRequest("tags/search/?is_typeahead=true&q=" + query + "&rank_token=" + rankToken, null);
+    }
+
+    public void getTimeline() {
+        sendRequest("feed/timeline/?rank_token=" + rankToken + "&ranked_content=true&", null);
+    }
+
+    public void getUserFeed(long usernameId, String maxid, String minTimestamp) {
+        sendRequest("feed/user/" + usernameId + "/?max_id=" + maxid + "&min_timestamp=" + minTimestamp
+                + "&rank_token=" + rankToken + "&ranked_content=true", null);
     }
 
     private void setUser(String username, String password) {
