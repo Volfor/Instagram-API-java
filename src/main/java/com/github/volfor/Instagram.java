@@ -38,7 +38,7 @@ public class Instagram {
 
     static {
         httpClient = new OkHttpClient.Builder()
-                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BASIC))
+//                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BASIC))
                 .cookieJar(new CookieJar() {
                     private final HashMap<HttpUrl, List<Cookie>> cookieStore = new HashMap<>();
 
@@ -149,10 +149,13 @@ public class Instagram {
         }
     }
 
-    /* TODO check this features */
-
     public void megaphoneLog() {
-        sendRequest("megaphone/log/", null);
+        String data = String.format("type=feed_aysf&action=seen&reason=&_uuid=%s&device_id=%s&_csrftoken=%s", uuid, deviceId, token);
+        sendRequest("megaphone/log/", data);
+    }
+
+    public void logout() {
+        sendRequest("accounts/logout/", null);
     }
 
     public void expose() {
@@ -167,10 +170,6 @@ public class Instagram {
         sendRequest("qe/expose/", generateSignature(data));
     }
 
-    public void logout() {
-        sendRequest("accounts/logout/", null);
-    }
-
     public void uploadPhoto(String filename, String caption, String uploadId) {
         if (uploadId == null) {
             uploadId = String.valueOf(System.currentTimeMillis());
@@ -180,12 +179,18 @@ public class Instagram {
             File photo = new File(filename);
             RequestBody body = RequestBody.create(MediaType.parse("application/octet-stream"), photo);
 
+            Json compression = new Json.Builder()
+                    .put("lib_name", "jt")
+                    .put("lib_version", "1.3.0")
+                    .put("quality", "87")
+                    .build();
+
             RequestBody multipart = new MultipartBody.Builder(uuid)
                     .setType(MultipartBody.FORM)
                     .addFormDataPart("_uuid", uuid)
                     .addFormDataPart("_csrftoken", token)
                     .addFormDataPart("upload_id", uploadId)
-                    .addFormDataPart("image_compression", "{\"lib_name\":\"jt\",\"lib_version\":\"1.3.0\",\"quality\":\"87\"}")
+                    .addFormDataPart("image_compression", compression.toJSONString())
                     .addFormDataPart("photo", "pending_media_" + uploadId + ".jpg", body)
                     .build();
 
@@ -222,8 +227,8 @@ public class Instagram {
         int h = bimage.getHeight();
 
         Json edits = new Json.Builder()
-                .put("crop_original_size", "[" + w * 1.0 + "," + h * 1.0 + "]")
-                .put("crop_center", "[0.0, 0.0]")
+                .put("crop_original_size", String.format("[%s.0,%s.0]", w, h))
+                .put("crop_center", "[0.0,0.0]")
                 .put("crop_zoom", 1.0)
                 .build();
 
@@ -287,18 +292,17 @@ public class Instagram {
 
         try {
             Response response = httpClient.newCall(request).execute();
-
+            String body = response.body().string();
             if (response.code() == 200) {
                 cookies = httpClient.cookieJar().loadForRequest(HttpUrl.parse(endpoint));
-                lastJson = (JSONObject) new JSONParser().parse(response.body().string());
+                lastJson = (JSONObject) new JSONParser().parse(body);
 
+                System.out.println(response.code() + ": " + body);
                 return true;
             } else {
-                System.err.println("Request return " + response.code() + " error!");
+                System.err.println(response.code() + ": " + body);
 
                 if (!isLoggedIn) {
-                    System.out.printf(response.body().string());
-
                     throw new NotLoggedInException();
                 }
             }
