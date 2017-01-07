@@ -1,6 +1,5 @@
 package com.github.volfor.helpers;
 
-import com.sun.istack.internal.NotNull;
 import org.json.simple.JSONObject;
 
 import java.util.Map;
@@ -21,7 +20,7 @@ public class Json extends JSONObject {
             return this;
         }
 
-        public Builder putAll(@NotNull Map m) {
+        public Builder putAll(Map m) {
             json.putAll(m);
             return this;
         }
