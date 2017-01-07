@@ -49,7 +49,7 @@ public class Instagram {
                     @Override
                     public List<Cookie> loadForRequest(HttpUrl url) {
                         List<Cookie> cookies = cookieStore.get(url);
-                        return cookies != null ? cookies : new ArrayList<>();
+                        return cookies != null ? cookies : new ArrayList<Cookie>();
                     }
                 })
                 .build();
