@@ -37,7 +37,7 @@ class Utils {
 
             Mac hmac = Mac.getInstance("HmacSHA256");
             hmac.init(new SecretKeySpec(IG_SIG_KEY.getBytes("UTF-8"), "HmacSHA256"));
-            String encodedHex = DatatypeConverter.printHexBinary(hmac.doFinal(dataString.getBytes("UTF-8"))).toLowerCase();
+            String encodedHex = bytesToHex(hmac.doFinal(dataString.getBytes("UTF-8")));
 
             return "ig_sig_key_version=" + SIG_KEY_VERSION + "&signed_body=" + encodedHex + "." + encodedData;
         } catch (UnsupportedEncodingException | NoSuchAlgorithmException | InvalidKeyException e) {
@@ -45,6 +45,18 @@ class Utils {
         }
 
         return "";
+    }
+
+    public static String bytesToHex(byte[] bytes) {
+        final char[] hexArray = "0123456789ABCDEF".toCharArray();
+        char[] hexChars = new char[bytes.length * 2];
+
+        for (int i = 0; i < bytes.length; i++) {
+            int v = bytes[i] & 0xFF;
+            hexChars[i * 2] = hexArray[v >>> 4];
+            hexChars[i * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars).toLowerCase();
     }
 
     static String getHexdigest(String s1, String s2) {
