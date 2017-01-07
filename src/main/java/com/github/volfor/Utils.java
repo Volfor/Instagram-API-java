@@ -37,7 +37,7 @@ class Utils {
 
             Mac hmac = Mac.getInstance("HmacSHA256");
             hmac.init(new SecretKeySpec(IG_SIG_KEY.getBytes("UTF-8"), "HmacSHA256"));
-            String encodedHex = Hex.encodeHexString(hmac.doFinal(dataString.getBytes("UTF-8")));
+            String encodedHex = new String(Hex.encodeHex(hmac.doFinal(dataString.getBytes("UTF-8"))));
 
             return "ig_sig_key_version=" + SIG_KEY_VERSION + "&signed_body=" + encodedHex + "." + encodedData;
         } catch (UnsupportedEncodingException | NoSuchAlgorithmException | InvalidKeyException e) {
