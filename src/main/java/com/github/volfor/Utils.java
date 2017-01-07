@@ -2,10 +2,10 @@ package com.github.volfor;
 
 import com.github.volfor.helpers.Json;
 import okhttp3.Cookie;
-import org.apache.commons.codec.binary.Hex;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.InvalidKeyException;
@@ -37,7 +37,7 @@ class Utils {
 
             Mac hmac = Mac.getInstance("HmacSHA256");
             hmac.init(new SecretKeySpec(IG_SIG_KEY.getBytes("UTF-8"), "HmacSHA256"));
-            String encodedHex = new String(Hex.encodeHex(hmac.doFinal(dataString.getBytes("UTF-8"))));
+            String encodedHex = DatatypeConverter.printHexBinary(hmac.doFinal(dataString.getBytes("UTF-8"))).toLowerCase();
 
             return "ig_sig_key_version=" + SIG_KEY_VERSION + "&signed_body=" + encodedHex + "." + encodedData;
         } catch (UnsupportedEncodingException | NoSuchAlgorithmException | InvalidKeyException e) {
