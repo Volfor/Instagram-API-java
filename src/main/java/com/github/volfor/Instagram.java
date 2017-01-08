@@ -283,8 +283,6 @@ public class Instagram {
         sendRequest("usertags/" + mediaId + "/remove/", generateSignature(data));
     }
 
-    /* TODO check this features*/
-
     public void mediaInfo(long mediaId) {
         Json data = new Json.Builder()
                 .put("_uuid", uuid)
@@ -294,34 +292,6 @@ public class Instagram {
                 .build();
 
         sendRequest("media/" + mediaId + "/info/", generateSignature(data));
-    }
-
-    public void deleteMedia(long mediaId) {
-        Json data = new Json.Builder()
-                .put("_uuid", uuid)
-                .put("_uid", usernameId)
-                .put("_csrftoken", token)
-                .put("media_id", mediaId)
-                .build();
-
-        sendRequest("media/" + mediaId + "/delete/", generateSignature(data));
-    }
-
-    public void changePassword(String newPassword) {
-        Json data = new Json.Builder()
-                .put("_uuid", uuid)
-                .put("_uid", usernameId)
-                .put("_csrftoken", token)
-                .put("old_password", password)
-                .put("new_password1", newPassword)
-                .put("new_password2", newPassword)
-                .build();
-
-        sendRequest("accounts/change_password/", generateSignature(data));
-    }
-
-    public void explore() {
-        sendRequest("discover/explore/", null);
     }
 
     public void comment(long mediaId, String commentText) {
@@ -345,34 +315,8 @@ public class Instagram {
         sendRequest("media/" + mediaId + "/comment/" + commentId + "/delete/", generateSignature(data));
     }
 
-    public void removeProfilePicture() {
-        Json data = new Json.Builder()
-                .put("_uuid", uuid)
-                .put("_uid", usernameId)
-                .put("_csrftoken", token)
-                .build();
-
-        sendRequest("accounts/remove_profile_picture/", generateSignature(data));
-    }
-
-    public void setPrivateAccount() {
-        Json data = new Json.Builder()
-                .put("_uuid", uuid)
-                .put("_uid", usernameId)
-                .put("_csrftoken", token)
-                .build();
-
-        sendRequest("accounts/set_private/", generateSignature(data));
-    }
-
-    public void setPublicAccount() {
-        Json data = new Json.Builder()
-                .put("_uuid", uuid)
-                .put("_uid", usernameId)
-                .put("_csrftoken", token)
-                .build();
-
-        sendRequest("accounts/set_public/", generateSignature(data));
+    public void explore() {
+        sendRequest("discover/explore/", null);
     }
 
     public void getProfileData() {
@@ -385,7 +329,7 @@ public class Instagram {
         sendRequest("accounts/current_user/?edit=true", generateSignature(data));
     }
 
-    public void editProfile(String url, String phone, String name, String biography, String email, String gender) {
+    public void editProfile(String url, String phone, String name, String biography, String email, int gender) {
         Json data = new Json.Builder()
                 .put("_uuid", uuid)
                 .put("_uid", usernameId)
@@ -447,10 +391,6 @@ public class Instagram {
         sendRequest("users/" + usernameName + "/usernameinfo/", null);
     }
 
-    public void syncFromAdressBook(JSONObject contacts) {
-        sendRequest("address_book/link/?include=extra_display_name,thumbnails", "contacts=" + contacts.toJSONString());
-    }
-
     public void searchTags(String query) {
         sendRequest("tags/search/?is_typeahead=true&q=" + query + "&rank_token=" + rankToken, null);
     }
@@ -462,6 +402,70 @@ public class Instagram {
     public void getUserFeed(long usernameId, String maxid, String minTimestamp) {
         sendRequest("feed/user/" + usernameId + "/?max_id=" + maxid + "&min_timestamp=" + minTimestamp
                 + "&rank_token=" + rankToken + "&ranked_content=true", null);
+    }
+
+    public void getSelfUserFeed(String maxid, String minTimestamp) {
+        getUserFeed(usernameId, maxid, minTimestamp);
+    }
+
+    /* TODO check this features */
+
+    public void deleteMedia(long mediaId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .put("media_id", mediaId)
+                .build();
+
+        sendRequest("media/" + mediaId + "/delete/", generateSignature(data)); // returns 400: {"message": "invalid parameters", "status": "fail"}
+    }
+
+    public void changePassword(String newPassword) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .put("old_password", password)
+                .put("new_password1", newPassword)
+                .put("new_password2", newPassword)
+                .build();
+
+        sendRequest("accounts/change_password/", generateSignature(data));
+    }
+
+    public void removeProfilePicture() {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("accounts/remove_profile_picture/", generateSignature(data));
+    }
+
+    public void setPrivateAccount() {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("accounts/set_private/", generateSignature(data));
+    }
+
+    public void setPublicAccount() {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("accounts/set_public/", generateSignature(data));
+    }
+
+    public void syncFromAdressBook(JSONObject contacts) {
+        sendRequest("address_book/link/?include=extra_display_name,thumbnails", "contacts=" + contacts.toJSONString());
     }
 
     private void setUser(String username, String password) {
