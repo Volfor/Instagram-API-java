@@ -273,8 +273,6 @@ public class Instagram {
         sendRequest("media/" + mediaId + "/edit_media/", generateSignature(data));
     }
 
-    /* TODO check this features*/
-
     public void removeSelftag(long mediaId) {
         Json data = new Json.Builder()
                 .put("_uuid", uuid)
@@ -282,8 +280,10 @@ public class Instagram {
                 .put("_csrftoken", token)
                 .build();
 
-        sendRequest("media/" + mediaId + "/remove/", generateSignature(data));
+        sendRequest("usertags/" + mediaId + "/remove/", generateSignature(data));
     }
+
+    /* TODO check this features*/
 
     public void mediaInfo(long mediaId) {
         Json data = new Json.Builder()
