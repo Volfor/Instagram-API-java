@@ -148,6 +148,10 @@ public class Instagram {
         }
     }
 
+    public void getSelfUserFollowers() {
+        getUserFollowers(usernameId, "");
+    }
+
     public void megaphoneLog() {
         String data = String.format("type=feed_aysf&action=seen&reason=&_uuid=%s&device_id=%s&_csrftoken=%s", uuid, deviceId, token);
         sendRequest("megaphone/log/", data);
@@ -406,6 +410,121 @@ public class Instagram {
 
     public void getSelfUserFeed(String maxid, String minTimestamp) {
         getUserFeed(usernameId, maxid, minTimestamp);
+    }
+
+    public void getHashtagFeed(String hashtag, String maxid) {
+        sendRequest("feed/tag/" + hashtag + "/?max_id=" + maxid + "&rank_token=" + rankToken + "&ranked_content=true&", null);
+    }
+
+    public void searchLocation(String query) {
+        sendRequest("fbsearch/places/?rank_token=" + rankToken + "&query=" + query, null);
+    }
+
+    public void getLocationFeed(long locationId, String maxid) {
+        sendRequest("feed/location/" + locationId + "/?max_id=" + maxid + "&rank_token=" + rankToken + "&ranked_content=true&", null);
+    }
+
+    public void getPopularFeed() {
+        sendRequest("feed/popular/?people_teaser_supported=1&rank_token=" + rankToken + "&ranked_content=true&", null);
+    }
+
+    public void getUserFollowings(long usernameId, String maxid) {
+        sendRequest("friendships/" + usernameId + "/following/?max_id=" + maxid
+                + "&ig_sig_key_version=" + SIG_KEY_VERSION + "&rank_token=" + rankToken, null);
+    }
+
+    public void getSelfUsersFollowing() {
+        getUserFollowings(usernameId, "");
+    }
+
+    public void unlike(long mediaId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("_csrftoken", token)
+                .put("media_id", mediaId)
+                .build();
+
+        sendRequest("media/" + mediaId + "/unlike/", generateSignature(data));
+    }
+
+    public void getMediaComments(long mediaId) {
+        sendRequest("media/" + mediaId + "/comments/?", null);
+    }
+
+    public void setNameAndPhone(String name, String phone) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("first_name", name)
+                .put("phone_number", phone)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("accounts/set_phone_and_name/", generateSignature(data));
+    }
+
+    public void getDirectShare() {
+        sendRequest("direct_share/inbox/?", null);
+    }
+
+    public void follow(long userId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("user_id", userId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("friendships/create/" + userId + "/", generateSignature(data));
+    }
+
+    public void unfollow(long userId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("user_id", userId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("friendships/destroy/" + userId + "/", generateSignature(data));
+    }
+
+    public void block(long userId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("user_id", userId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("friendships/block/" + userId + "/", generateSignature(data));
+    }
+
+    public void unblock(long userId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("user_id", userId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("friendships/unblock/" + userId + "/", generateSignature(data));
+    }
+
+    public void userFriendship(long userId) {
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("user_id", userId)
+                .put("_csrftoken", token)
+                .build();
+
+        sendRequest("friendships/show/" + userId + "/", generateSignature(data));
+    }
+
+    public void getLikedMedia(String maxid) {
+        sendRequest("feed/liked/?max_id=" + maxid, null);
     }
 
     /* TODO check this features */
