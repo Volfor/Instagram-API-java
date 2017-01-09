@@ -2,6 +2,7 @@ package com.github.volfor;
 
 import com.github.volfor.helpers.Json;
 import okhttp3.*;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -527,17 +528,16 @@ public class Instagram {
         sendRequest("feed/liked/?max_id=" + maxid, null);
     }
 
-    /* TODO check this features */
-
     public void deleteMedia(long mediaId) {
+        String id = String.format("%s_%s", mediaId, usernameId);
         Json data = new Json.Builder()
                 .put("_uuid", uuid)
                 .put("_uid", usernameId)
                 .put("_csrftoken", token)
-                .put("media_id", mediaId)
+                .put("media_id", id)
                 .build();
 
-        sendRequest("media/" + mediaId + "/delete/", generateSignature(data)); // returns 400: {"message": "invalid parameters", "status": "fail"}
+        sendRequest("media/" + id + "/delete/", generateSignature(data));
     }
 
     public void changePassword(String newPassword) {
@@ -581,6 +581,98 @@ public class Instagram {
                 .build();
 
         sendRequest("accounts/set_public/", generateSignature(data));
+    }
+
+    /* TODO check this features */
+
+    public List<Object> getTotalFollowers(long usernameId) {
+        List<Object> followers = new ArrayList<>();
+        String nextMaxId = "";
+
+        while (true) {
+            getUserFollowers(usernameId, nextMaxId);
+            JSONObject temp = lastJson;
+
+            for (Object item : (JSONArray) temp.get("users")) {
+                followers.add(item);
+            }
+
+            if (!((boolean) temp.get("big_list"))) {
+                return followers;
+            }
+
+            nextMaxId = (String) temp.get("next_max_id");
+        }
+    }
+
+    public List<Object> getTotalFollowings(long usernameId) {
+        List<Object> followers = new ArrayList<>();
+        String nextMaxId = "";
+
+        while (true) {
+            getUserFollowings(usernameId, nextMaxId);
+            JSONObject temp = lastJson;
+
+            for (Object item : (JSONArray) temp.get("users")) {
+                followers.add(item);
+            }
+
+            if (!((boolean) temp.get("big_list"))) {
+                return followers;
+            }
+
+            nextMaxId = (String) temp.get("next_max_id");
+        }
+    }
+
+    public List<Object> getTotalUserFeed(long usernameId, String minTimestamp) {
+        List<Object> userFeed = new ArrayList<>();
+        String nextMaxId = "";
+
+        while (true) {
+            getUserFeed(usernameId, nextMaxId, minTimestamp);
+            JSONObject temp = lastJson;
+
+            for (Object item : (JSONArray) temp.get("items")) {
+                userFeed.add(item);
+            }
+
+            if (!((boolean) temp.get("more_available"))) {
+                return userFeed;
+            }
+
+            nextMaxId = (String) temp.get("next_max_id");
+        }
+    }
+
+    public List<Object> getTotalSelfUserFeed(String minTimestamp) {
+        return getTotalUserFeed(usernameId, minTimestamp);
+    }
+
+    public List<Object> getTotalSelfFollowers() {
+        return getTotalFollowers(usernameId);
+    }
+
+    public List<Object> getTotalSelfFollowings() {
+        return getTotalFollowings(usernameId);
+    }
+
+    public List<Object> getTotalLikedMedia(int scanRate) {
+        scanRate = 1;
+        String nextId = "";
+        List<Object> likedItems = new ArrayList<>();
+
+        for (int i = 0; i < scanRate; i++) {
+            getLikedMedia(nextId);
+            JSONObject temp = lastJson;
+            nextId = (String) temp.get("next_max_id");
+
+            for (Object item : (JSONArray) temp.get("items")) {
+                likedItems.add(item);
+            }
+        }
+
+        return likedItems;
     }
 
     public void syncFromAdressBook(JSONObject contacts) {
