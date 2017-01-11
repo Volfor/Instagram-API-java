@@ -13,6 +13,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +41,17 @@ public class Instagram {
 
     private static OkHttpClient httpClient;
 
-    private void setup(String username, String password) {
+
+    public Instagram(String username, String password) {
+        setup(username, password, null);
+    }
+
+    public Instagram(String username, String password, Proxy proxy) {
+        //proxy = new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved("host", "port"));
+        setup(username, password, proxy);
+    }
+
+    private void setup(String username, String password, Proxy proxy) {
         this.username = username;
         this.password = password;
 
@@ -80,6 +91,8 @@ public class Instagram {
                 })
                 .build();
 
+        if (proxy != null) httpClient = httpClient.newBuilder().proxy(proxy).build();
+
         retrofit = new Retrofit.Builder()
                 .baseUrl(Constants.API_URL)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -91,10 +104,6 @@ public class Instagram {
 
     public void login(boolean force) {
         if (!isLoggedIn || force) {
-            // if you need proxy make something like this:
-            // Proxy proxy = new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved("host", "post"));
-            // httpClient = httpClient.newBuilder().proxy(proxy).build();
-
             if (sendRequest("si/fetch_headers/?challenge_type=signup&guid=" + generateUUID(false), null)) {
                 Json data = new Json.Builder()
                         .put("phone_id", generateUUID(true))
