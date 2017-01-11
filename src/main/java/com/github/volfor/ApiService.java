@@ -14,4 +14,8 @@ public interface ApiService {
     @POST("accounts/login/")
     Call<LoginResponse> login(@Field("ig_sig_key_version") String sigKeyVersion, @Field("signed_body") String signedBody);
 
+    @FormUrlEncoded
+    @POST("qe/sync/")
+    Call<ResponseBody> sync(@Field("ig_sig_key_version") String sigKeyVersion, @Field("signed_body") String signedBody);
+
 }

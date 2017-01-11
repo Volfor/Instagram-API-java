@@ -1,16 +1,18 @@
 package com.github.volfor;
 
 import com.github.volfor.helpers.Json;
+import com.github.volfor.models.Experiment;
 import com.github.volfor.responses.LoginResponse;
+import com.github.volfor.responses.SyncResponse;
 import okhttp3.*;
-import okhttp3.Response;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import retrofit2.*;
 import retrofit2.Call;
 import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import javax.imageio.ImageIO;
@@ -21,11 +23,15 @@ import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static com.github.volfor.Constants.*;
 import static com.github.volfor.Utils.*;
 
 public class Instagram {
+
+    private final static Logger LOG = Logger.getLogger(Instagram.class.getName());
 
     private ApiService service;
     private Retrofit retrofit;
@@ -140,6 +146,13 @@ public class Instagram {
                                     token = session.getToken();
                                     rankToken = String.format("%s_%s", usernameId, uuid);
 
+                                    try {
+                                        syncFeaturesSync();
+
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+
                                     callback.onSuccess(session);
                                 }
                             }
@@ -160,7 +173,7 @@ public class Instagram {
         }
     }
 
-    private void syncFeatures() {
+    private void syncFeaturesSync() throws IOException {
         Json data = new Json.Builder()
                 .put("_uuid", uuid)
                 .put("_uid", usernameId)
@@ -169,8 +182,41 @@ public class Instagram {
                 .put("experiments", EXPERIMENTS)
                 .build();
 
-        sendRequest("qe/sync/", generateSignature(data));
+        Response<ResponseBody> response = service.sync(SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            LOG.logp(Level.WARNING, LOG.getName(), "syncFeatures",
+                    "Syncing features failed with message: " + parseErrorMessage(response.errorBody()));
+        }
     }
+
+    public void syncFeatures(final com.github.volfor.Callback<List<Experiment>> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        Json data = new Json.Builder()
+                .put("_uuid", uuid)
+                .put("_uid", usernameId)
+                .put("id", usernameId)
+                .put("_csrftoken", token)
+                .put("experiments", EXPERIMENTS)
+                .build();
+
+        service.sync(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(new SyncResponse(response.body()).getExperiments());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
+    }
+
 
     private void autoCompleteUserList() {
         sendRequest("friendships/autocomplete_user_list/", null);
@@ -274,7 +320,7 @@ public class Instagram {
                     .post(multipart)
                     .build();
 
-            Response response = retrofit.callFactory().newCall(request).execute();
+            okhttp3.Response response = retrofit.callFactory().newCall(request).execute();
             if (response.code() == 200) {
                 if (configure(uploadId, filename, caption)) {
                     expose();
@@ -756,7 +802,7 @@ public class Instagram {
         }
 
         try {
-            Response response = retrofit.callFactory().newCall(request).execute();
+            okhttp3.Response response = retrofit.callFactory().newCall(request).execute();
             String body = response.body().string();
             if (response.code() == 200) {
                 lastJson = (JSONObject) new JSONParser().parse(body);
