@@ -2,6 +2,7 @@ package com.github.volfor;
 
 import com.github.volfor.helpers.Json;
 import com.github.volfor.models.Experiment;
+import com.github.volfor.responses.AutocompleteUserListResponse;
 import com.github.volfor.responses.LoginResponse;
 import com.github.volfor.responses.SyncResponse;
 import okhttp3.*;
@@ -147,8 +148,8 @@ public class Instagram {
                                     rankToken = String.format("%s_%s", usernameId, uuid);
 
                                     try {
-                                        syncFeaturesSync();
-
+                                        syncFeatures();
+                                        autocompleteUserList();
                                     } catch (IOException e) {
                                         e.printStackTrace();
                                     }
@@ -173,7 +174,7 @@ public class Instagram {
         }
     }
 
-    private void syncFeaturesSync() throws IOException {
+    private void syncFeatures() throws IOException {
         Json data = new Json.Builder()
                 .put("_uuid", uuid)
                 .put("_uid", usernameId)
@@ -217,9 +218,32 @@ public class Instagram {
         });
     }
 
+    private void autocompleteUserList() throws IOException {
+        Response response = service.autocompleteUserList().execute();
+        if (!response.isSuccessful()) {
+            LOG.logp(Level.WARNING, LOG.getName(), "autoCompleteUserList",
+                    "Getting autocomplete user list failed with message: " + parseErrorMessage(response.errorBody()));
+        }
+    }
 
-    private void autoCompleteUserList() {
-        sendRequest("friendships/autocomplete_user_list/", null);
+    public void autocompleteUserList(final com.github.volfor.Callback<AutocompleteUserListResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.autocompleteUserList().enqueue(new Callback<AutocompleteUserListResponse>() {
+            @Override
+            public void onResponse(Call<AutocompleteUserListResponse> call, Response<AutocompleteUserListResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<AutocompleteUserListResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     private void timelineFeed() {

@@ -1,5 +1,6 @@
 package com.github.volfor;
 
+import com.github.volfor.responses.AutocompleteUserListResponse;
 import com.github.volfor.responses.LoginResponse;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -17,5 +18,8 @@ public interface ApiService {
     @FormUrlEncoded
     @POST("qe/sync/")
     Call<ResponseBody> sync(@Field("ig_sig_key_version") String sigKeyVersion, @Field("signed_body") String signedBody);
+
+    @GET("friendships/autocomplete_user_list/")
+    Call<AutocompleteUserListResponse> autocompleteUserList();
 
 }
