@@ -1,12 +1,16 @@
 package com.github.volfor;
 
 import com.github.volfor.helpers.Json;
+import com.github.volfor.responses.LoginResponse;
 import okhttp3.*;
+import okhttp3.Response;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import retrofit2.Retrofit;
+import retrofit2.*;
+import retrofit2.Call;
+import retrofit2.Callback;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import javax.imageio.ImageIO;
@@ -35,19 +39,16 @@ public class Instagram {
     private String token;
     private boolean isLoggedIn;
 
-    private List<Cookie> cookies = new ArrayList<>();
-    private String loginSessionCookies;
     public JSONObject lastJson;
 
-    private static OkHttpClient httpClient;
-
+    private Session session = new Session();
 
     public Instagram(String username, String password) {
         setup(username, password, null);
     }
 
     public Instagram(String username, String password, Proxy proxy) {
-        //proxy = new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved("host", "port"));
+        // proxy = new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved("host", "port"));
         setup(username, password, proxy);
     }
 
@@ -59,7 +60,8 @@ public class Instagram {
         this.deviceId = generateDeviceId(getHexdigest(username, password));
 
         OkHttpClient httpClient = new OkHttpClient.Builder()
-//                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+                // .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+                .addInterceptor(new AddCookiesInterceptor(session.getCookies()))
                 .cookieJar(new CookieJar() {
                     private final HashMap<HttpUrl, List<Cookie>> cookieStore = new HashMap<>();
 
@@ -102,35 +104,59 @@ public class Instagram {
         service = retrofit.create(ApiService.class);
     }
 
-    public void login(boolean force) {
+    public void login(boolean force, final com.github.volfor.Callback<Session> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         if (!isLoggedIn || force) {
-            if (sendRequest("si/fetch_headers/?challenge_type=signup&guid=" + generateUUID(false), null)) {
-                Json data = new Json.Builder()
-                        .put("phone_id", generateUUID(true))
-                        .put("_csrftoken", getCookie(cookies, "csrftoken").value())
-                        .put("username", username)
-                        .put("guid", uuid)
-                        .put("device_id", deviceId)
-                        .put("password", password)
-                        .put("login_attempt_count", "0")
-                        .build();
+            service.fetchHeaders(generateUUID(false)).enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
+                    if (!response.isSuccessful()) {
+                        callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                    } else {
+                        Json data = new Json.Builder()
+                                .put("phone_id", generateUUID(true))
+                                .put("username", username)
+                                .put("guid", uuid)
+                                .put("device_id", deviceId)
+                                .put("password", password)
+                                .put("login_attempt_count", "0")
+                                .build();
 
-                if (sendRequest("accounts/login/", generateSignature(data))) {
-                    isLoggedIn = true;
-                    loginSessionCookies = getCookieString(cookies);
-                    usernameId = (long) ((JSONObject) lastJson.get("logged_in_user")).get("pk");
-                    rankToken = String.format("%s_%s", usernameId, uuid);
-                    token = getCookie(cookies, "csrftoken").value();
+                        service.login(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<LoginResponse>() {
+                            @Override
+                            public void onResponse(Call<LoginResponse> call, retrofit2.Response<LoginResponse> response) {
+                                if (!response.isSuccessful()) {
+                                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                                } else {
+                                    isLoggedIn = true;
 
-                    syncFeatures();
-                    autoCompleteUserList();
-                    timelineFeed();
-                    getv2Inbox();
-                    getRecentActivity();
+                                    session.setCookies(((OkHttpClient) retrofit.callFactory()).cookieJar()
+                                            .loadForRequest(call.request().url()));
 
-                    System.out.println("Login success!\n");
+                                    session.setLoggedInUser(response.body().getLoggedInUser());
+
+                                    usernameId = session.getLoggedInUser().getPk();
+                                    token = session.getToken();
+                                    rankToken = String.format("%s_%s", usernameId, uuid);
+
+                                    callback.onSuccess(session);
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<LoginResponse> call, Throwable t) {
+                                callback.onFailure(t);
+                            }
+                        });
+                    }
                 }
-            }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    callback.onFailure(t);
+                }
+            });
         }
     }
 
@@ -248,9 +274,7 @@ public class Instagram {
                     .post(multipart)
                     .build();
 
-            request = addSessionCookies(request);
-
-            Response response = httpClient.newCall(request).execute();
+            Response response = retrofit.callFactory().newCall(request).execute();
             if (response.code() == 200) {
                 if (configure(uploadId, filename, caption)) {
                     expose();
@@ -292,16 +316,6 @@ public class Instagram {
                 .build();
 
         return sendRequest("media/configure/?", generateSignature(data));
-    }
-
-    private Request addSessionCookies(Request request) {
-        if (loginSessionCookies != null && !loginSessionCookies.isEmpty()) {
-            request = request.newBuilder()
-                    .addHeader("Cookie", loginSessionCookies)
-                    .build();
-        }
-
-        return request;
     }
 
     public void editMedia(long mediaId, String captionText) {
@@ -735,8 +749,6 @@ public class Instagram {
                 .url(endpoint)
                 .build();
 
-        request = addSessionCookies(request);
-
         if (post != null) { //POST
             request = request.newBuilder()
                     .post(RequestBody.create(MediaType.parse("application/x-www-form-urlencoded; charset=UTF-8"), post))
@@ -744,10 +756,9 @@ public class Instagram {
         }
 
         try {
-            Response response = httpClient.newCall(request).execute();
+            Response response = retrofit.callFactory().newCall(request).execute();
             String body = response.body().string();
             if (response.code() == 200) {
-                cookies = httpClient.cookieJar().loadForRequest(HttpUrl.parse(endpoint));
                 lastJson = (JSONObject) new JSONParser().parse(body);
 
                 System.out.println(response.code() + ": " + body);
