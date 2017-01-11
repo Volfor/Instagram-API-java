@@ -6,6 +6,8 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -20,6 +22,9 @@ import static com.github.volfor.Utils.*;
 
 public class Instagram {
 
+    private ApiService service;
+    private Retrofit retrofit;
+
     private String username;
     private String password;
     private String uuid;
@@ -27,8 +32,7 @@ public class Instagram {
     private long usernameId;
     private String rankToken;
     private String token;
-
-    private boolean isLoggedIn = false;
+    private boolean isLoggedIn;
 
     private List<Cookie> cookies = new ArrayList<>();
     private String loginSessionCookies;
@@ -36,9 +40,15 @@ public class Instagram {
 
     private static OkHttpClient httpClient;
 
-    static {
-        httpClient = new OkHttpClient.Builder()
-//                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BASIC))
+    private void setup(String username, String password) {
+        this.username = username;
+        this.password = password;
+
+        this.uuid = generateUUID(true);
+        this.deviceId = generateDeviceId(getHexdigest(username, password));
+
+        OkHttpClient httpClient = new OkHttpClient.Builder()
+//                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
                 .cookieJar(new CookieJar() {
                     private final HashMap<HttpUrl, List<Cookie>> cookieStore = new HashMap<>();
 
@@ -53,12 +63,30 @@ public class Instagram {
                         return cookies != null ? cookies : new ArrayList<Cookie>();
                     }
                 })
-                .build();
-    }
+                .addInterceptor(new Interceptor() {
+                    @Override
+                    public okhttp3.Response intercept(Chain chain) throws IOException {
+                        Request request = chain.request().newBuilder()
+                                .header("Connection", "close")
+                                .header("Accept", "*/*")
+                                .header("Content-type", "application/x-www-form-urlencoded; charset=UTF-8")
+                                .header("Cookie2", "$Version=1")
+                                .header("Accept-Language", "en-US")
+                                .header("User-Agent", USER_AGENT)
+                                .build();
 
-    public Instagram(String username, String password) {
-        deviceId = generateDeviceId(getHexdigest(username, password));
-        setUser(username, password);
+                        return chain.proceed(request);
+                    }
+                })
+                .build();
+
+        retrofit = new Retrofit.Builder()
+                .baseUrl(Constants.API_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(httpClient)
+                .build();
+
+        service = retrofit.create(ApiService.class);
     }
 
     public void login(boolean force) {
