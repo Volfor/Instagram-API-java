@@ -1,11 +1,9 @@
 package com.github.volfor;
 
-import com.github.volfor.helpers.Json;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import okhttp3.Cookie;
 import okhttp3.ResponseBody;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -32,13 +30,13 @@ class Utils {
         return "android-" + getHexdigest(seed, volatileSeed).substring(0, 16);
     }
 
-    static String generateSignature(Json data) {
+    static String generateSignature(JsonObject data) {
         try {
             Mac hmac = Mac.getInstance("HmacSHA256");
             hmac.init(new SecretKeySpec(IG_SIG_KEY.getBytes("UTF-8"), "HmacSHA256"));
-            String encodedHex = bytesToHex(hmac.doFinal(data.toJSONString().getBytes("UTF-8")));
+            String encodedHex = bytesToHex(hmac.doFinal(data.toString().getBytes("UTF-8")));
 
-            return encodedHex + "." + data.toJSONString();
+            return encodedHex + "." + data.toString();
         } catch (UnsupportedEncodingException | NoSuchAlgorithmException | InvalidKeyException e) {
             e.printStackTrace();
         }
@@ -106,9 +104,9 @@ class Utils {
 
     static String parseErrorMessage(ResponseBody errorBody) {
         try {
-            JSONObject error = (JSONObject) new JSONParser().parse(errorBody.string());
-            return (String) error.get("message");
-        } catch (ParseException | IOException e) {
+            JsonObject error = (JsonObject) new JsonParser().parse(errorBody.string());
+            return error.get("message").getAsString();
+        } catch (IOException e) {
             e.printStackTrace();
             return e.getMessage();
         }
