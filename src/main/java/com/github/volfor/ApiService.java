@@ -3,6 +3,7 @@ package com.github.volfor;
 import com.github.volfor.responses.AutocompleteUserListResponse;
 import com.github.volfor.responses.LoginResponse;
 import com.github.volfor.responses.TimelineFeedResponse;
+import com.github.volfor.responses.V2InboxResponse;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.*;
@@ -25,5 +26,8 @@ public interface ApiService {
 
     @GET("feed/timeline/")
     Call<TimelineFeedResponse> timeline();
+
+    @GET("direct_v2/inbox/?")
+    Call<V2InboxResponse> directv2Inbox();
 
 }

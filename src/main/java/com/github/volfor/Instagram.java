@@ -1,11 +1,9 @@
 package com.github.volfor;
 
 import com.github.volfor.models.Experiment;
-import com.github.volfor.responses.AutocompleteUserListResponse;
-import com.github.volfor.responses.LoginResponse;
-import com.github.volfor.responses.SyncResponse;
-import com.github.volfor.responses.TimelineFeedResponse;
-import com.google.gson.*;
+import com.github.volfor.responses.*;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import okhttp3.*;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -147,6 +145,7 @@ public class Instagram {
                                         syncFeatures();
                                         autocompleteUserList();
                                         timelineFeed();
+                                        getv2Inbox();
                                     } catch (IOException e) {
                                         e.printStackTrace();
                                     }
@@ -269,8 +268,32 @@ public class Instagram {
         });
     }
 
-    private void getv2Inbox() {
-        sendRequest("direct_v2/inbox/?", null);
+    private void getv2Inbox() throws IOException {
+        Response response = service.directv2Inbox().execute();
+        if (!response.isSuccessful()) {
+            LOG.logp(Level.WARNING, LOG.getName(), "getv2Inbox",
+                    "Getting direct v2 inbox failed with message: " + parseErrorMessage(response.errorBody()));
+        }
+    }
+
+    public void getv2Inbox(final com.github.volfor.Callback<V2InboxResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.directv2Inbox().enqueue(new Callback<V2InboxResponse>() {
+            @Override
+            public void onResponse(Call<V2InboxResponse> call, Response<V2InboxResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<V2InboxResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     private void getRecentActivity() {
