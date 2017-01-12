@@ -1,9 +1,6 @@
 package com.github.volfor;
 
-import com.github.volfor.responses.AutocompleteUserListResponse;
-import com.github.volfor.responses.LoginResponse;
-import com.github.volfor.responses.TimelineFeedResponse;
-import com.github.volfor.responses.V2InboxResponse;
+import com.github.volfor.responses.*;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.*;
@@ -29,5 +26,8 @@ public interface ApiService {
 
     @GET("direct_v2/inbox/?")
     Call<V2InboxResponse> directv2Inbox();
+
+    @GET("news/inbox/?")
+    Call<RecentActivityResponse> newsInbox();
 
 }

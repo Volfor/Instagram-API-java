@@ -146,6 +146,7 @@ public class Instagram {
                                         autocompleteUserList();
                                         timelineFeed();
                                         getv2Inbox();
+                                        getRecentActivity();
                                     } catch (IOException e) {
                                         e.printStackTrace();
                                     }
@@ -296,8 +297,32 @@ public class Instagram {
         });
     }
 
-    private void getRecentActivity() {
-        sendRequest("news/inbox/?", null);
+    private void getRecentActivity() throws IOException {
+        Response response = service.newsInbox().execute();
+        if (!response.isSuccessful()) {
+            LOG.logp(Level.WARNING, LOG.getName(), "getRecentActivity",
+                    "Getting recent activity failed with message: " + parseErrorMessage(response.errorBody()));
+        }
+    }
+
+    public void getRecentActivity(final com.github.volfor.Callback<RecentActivityResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.newsInbox().enqueue(new Callback<RecentActivityResponse>() {
+            @Override
+            public void onResponse(Call<RecentActivityResponse> call, Response<RecentActivityResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RecentActivityResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getFeedByTag(String tag) {
