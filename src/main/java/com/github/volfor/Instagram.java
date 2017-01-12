@@ -345,15 +345,33 @@ public class Instagram {
         });
     }
 
-    public void like(long mediaId) {
+    public void like(long mediaId, final com.github.volfor.Callback<com.github.volfor.responses.Response> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", uuid);
         data.addProperty("_uid", usernameId);
         data.addProperty("_csrftoken", token);
         data.addProperty("media_id", mediaId);
 
-        sendRequest("media/" + mediaId + "/like/", generateSignature(data));
-        System.out.println("Liked!");
+        service.like(mediaId, SIG_KEY_VERSION, generateSignature(data)).enqueue(
+                new Callback<com.github.volfor.responses.Response>() {
+                    @Override
+                    public void onResponse(Call<com.github.volfor.responses.Response> call,
+                                           Response<com.github.volfor.responses.Response> response) {
+
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<com.github.volfor.responses.Response> call, Throwable t) {
+                        callback.onFailure(t);
+                    }
+                });
     }
 
     public void getUserFollowers(long usernameId, String maxid) {

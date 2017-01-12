@@ -33,4 +33,10 @@ public interface ApiService {
     @GET("feed/tag/{tag}/?ranked_content=true")
     Call<TagFeedResponse> tagFeed(@Path("tag") String tag, @Query("rank_token") String rankToken);
 
+    @FormUrlEncoded
+    @POST("media/{mediaId}/like/")
+    Call<Response> like(@Path("mediaId") long mediaId,
+                        @Field("ig_sig_key_version") String sigKeyVersion,
+                        @Field("signed_body") String signedBody);
+
 }
