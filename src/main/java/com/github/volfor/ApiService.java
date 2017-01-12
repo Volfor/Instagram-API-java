@@ -30,4 +30,7 @@ public interface ApiService {
     @GET("news/inbox/?")
     Call<RecentActivityResponse> newsInbox();
 
+    @GET("feed/tag/{tag}/?ranked_content=true")
+    Call<TagFeedResponse> tagFeed(@Path("tag") String tag, @Query("rank_token") String rankToken);
+
 }

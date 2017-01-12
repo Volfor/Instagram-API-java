@@ -62,7 +62,7 @@ public class Instagram {
         this.deviceId = generateDeviceId(getHexdigest(username, password));
 
         OkHttpClient httpClient = new OkHttpClient.Builder()
-                // .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+//                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
                 .addInterceptor(new AddCookiesInterceptor(session.getCookies()))
                 .cookieJar(new CookieJar() {
                     private final HashMap<HttpUrl, List<Cookie>> cookieStore = new HashMap<>();
@@ -325,8 +325,24 @@ public class Instagram {
         });
     }
 
-    public void getFeedByTag(String tag) {
-        sendRequest("feed/tag/" + tag + "/?rank_token=" + rankToken + "&ranked_content=true&", null);
+    public void getFeedByTag(String tag, final com.github.volfor.Callback<TagFeedResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.tagFeed(tag, rankToken).enqueue(new Callback<TagFeedResponse>() {
+            @Override
+            public void onResponse(Call<TagFeedResponse> call, Response<TagFeedResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<TagFeedResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void like(long mediaId) {
