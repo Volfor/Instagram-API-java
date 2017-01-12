@@ -4,6 +4,7 @@ import com.github.volfor.models.Experiment;
 import com.github.volfor.responses.AutocompleteUserListResponse;
 import com.github.volfor.responses.LoginResponse;
 import com.github.volfor.responses.SyncResponse;
+import com.github.volfor.responses.TimelineFeedResponse;
 import com.google.gson.*;
 import okhttp3.*;
 import retrofit2.Call;
@@ -145,6 +146,7 @@ public class Instagram {
                                     try {
                                         syncFeatures();
                                         autocompleteUserList();
+                                        timelineFeed();
                                     } catch (IOException e) {
                                         e.printStackTrace();
                                     }
@@ -239,8 +241,32 @@ public class Instagram {
         });
     }
 
-    private void timelineFeed() {
-        sendRequest("feed/timeline/", null);
+    private void timelineFeed() throws IOException {
+        Response response = service.timeline().execute();
+        if (!response.isSuccessful()) {
+            LOG.logp(Level.WARNING, LOG.getName(), "timelineFeed",
+                    "Getting timeline feed failed with message: " + parseErrorMessage(response.errorBody()));
+        }
+    }
+
+    public void timelineFeed(final com.github.volfor.Callback<TimelineFeedResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.timeline().enqueue(new Callback<TimelineFeedResponse>() {
+            @Override
+            public void onResponse(Call<TimelineFeedResponse> call, Response<TimelineFeedResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<TimelineFeedResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     private void getv2Inbox() {

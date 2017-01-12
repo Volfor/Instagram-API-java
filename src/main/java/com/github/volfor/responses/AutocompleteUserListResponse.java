@@ -8,7 +8,6 @@ import java.util.List;
 @Data
 public class AutocompleteUserListResponse extends Response {
 
-    private String status;
     private long expires;
     List<User> users;
 
