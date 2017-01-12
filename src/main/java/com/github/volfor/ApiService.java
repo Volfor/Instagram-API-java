@@ -39,4 +39,9 @@ public interface ApiService {
                         @Field("ig_sig_key_version") String sigKeyVersion,
                         @Field("signed_body") String signedBody);
 
+    @GET("friendships/{userId}/followers/")
+    Call<FollowersResponse> followers(@Path("userId") long userId,
+                                      @Query("rank_token") String rankToken,
+                                      @Query("max_id") String maxId);
+
 }
