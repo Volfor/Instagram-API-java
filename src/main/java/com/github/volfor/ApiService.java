@@ -5,6 +5,8 @@ import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.*;
 
+import java.util.Map;
+
 public interface ApiService {
 
     @GET("si/fetch_headers/?challenge_type=signup")
@@ -43,5 +45,9 @@ public interface ApiService {
     Call<FollowersResponse> followers(@Path("userId") long userId,
                                       @Query("rank_token") String rankToken,
                                       @Query("max_id") String maxId);
+
+    @FormUrlEncoded
+    @POST("megaphone/log/")
+    Call<MegaphoneLogResponse> megaphone(@FieldMap Map<String, String> params);
 
 }

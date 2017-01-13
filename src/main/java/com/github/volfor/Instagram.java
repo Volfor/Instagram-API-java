@@ -19,6 +19,7 @@ import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -406,9 +407,31 @@ public class Instagram {
         getUserFollowers(usernameId, maxId, callback);
     }
 
-    public void megaphoneLog() {
-        String data = String.format("type=feed_aysf&action=seen&reason=&_uuid=%s&device_id=%s&_csrftoken=%s", uuid, deviceId, token);
-        sendRequest("megaphone/log/", data);
+    public void megaphoneLog(final com.github.volfor.Callback<MegaphoneLogResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        Map<String, String> params = new HashMap<>();
+        params.put("type", "feed_aysf");
+        params.put("action", "seen");
+        params.put("_uuid", uuid);
+        params.put("device_id", deviceId);
+        params.put("_csrftoken", token);
+
+        service.megaphone(params).enqueue(new Callback<MegaphoneLogResponse>() {
+            @Override
+            public void onResponse(Call<MegaphoneLogResponse> call, Response<MegaphoneLogResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MegaphoneLogResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void logout() {
