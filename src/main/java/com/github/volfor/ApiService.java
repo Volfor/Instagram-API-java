@@ -53,4 +53,8 @@ public interface ApiService {
     @GET("accounts/logout/")
     Call<Response> logout();
 
+    @FormUrlEncoded
+    @POST("qe/expose/")
+    Call<Response> expose(@Field("ig_sig_key_version") String sigKeyVersion, @Field("signed_body") String signedBody);
+
 }

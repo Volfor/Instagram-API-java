@@ -446,7 +446,9 @@ public class Instagram {
         });
     }
 
-    public void expose() {
+    public void expose(final com.github.volfor.Callback<com.github.volfor.responses.Response> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
@@ -454,7 +456,23 @@ public class Instagram {
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("experiment", "ig_android_profile_contextual_feed");
 
-        sendRequest("qe/expose/", generateSignature(data));
+        service.expose(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<com.github.volfor.responses.Response>() {
+            @Override
+            public void onResponse(Call<com.github.volfor.responses.Response> call,
+                                   Response<com.github.volfor.responses.Response> response) {
+
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<com.github.volfor.responses.Response> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void uploadPhoto(String filename, String caption, String uploadId) {
@@ -496,7 +514,7 @@ public class Instagram {
             okhttp3.Response response = retrofit.callFactory().newCall(request).execute();
             if (response.code() == 200) {
                 if (configure(uploadId, filename, caption)) {
-                    expose();
+//                    expose();
                 }
             }
             System.out.println(response.code() + ": " + response.body().string());
