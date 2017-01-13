@@ -35,11 +35,6 @@ public class Instagram {
 
     private String username;
     private String password;
-    private String uuid;
-    private String deviceId;
-    private long usernameId;
-    private String rankToken;
-    private String token;
     private boolean isLoggedIn;
 
     public JsonObject lastJson;
@@ -58,9 +53,7 @@ public class Instagram {
     private void setup(String username, String password, Proxy proxy) {
         this.username = username;
         this.password = password;
-
-        this.uuid = generateUUID(true);
-        this.deviceId = generateDeviceId(getHexdigest(username, password));
+        session.setDeviceId(generateDeviceId(getHexdigest(username, password)));
 
         OkHttpClient httpClient = new OkHttpClient.Builder()
 //                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
@@ -120,8 +113,8 @@ public class Instagram {
                         JsonObject data = new JsonObject();
                         data.addProperty("phone_id", generateUUID(true));
                         data.addProperty("username", username);
-                        data.addProperty("guid", uuid);
-                        data.addProperty("device_id", deviceId);
+                        data.addProperty("guid", session.getUuid());
+                        data.addProperty("device_id", session.getDeviceId());
                         data.addProperty("password", password);
                         data.addProperty("login_attempt_count", "0");
 
@@ -137,10 +130,6 @@ public class Instagram {
                                             .loadForRequest(call.request().url()));
 
                                     session.setLoggedInUser(response.body().getLoggedInUser());
-
-                                    usernameId = session.getLoggedInUser().getPk();
-                                    token = session.getToken();
-                                    rankToken = String.format("%s_%s", usernameId, uuid);
 
                                     try {
                                         syncFeatures();
@@ -174,10 +163,10 @@ public class Instagram {
 
     private void syncFeatures() throws IOException {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("id", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("id", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("experiments", EXPERIMENTS);
 
         Response<ResponseBody> response = service.sync(SIG_KEY_VERSION, generateSignature(data)).execute();
@@ -191,10 +180,10 @@ public class Instagram {
         if (callback == null) throw new NullPointerException("callback == null");
 
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("id", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("id", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("experiments", EXPERIMENTS);
 
         service.sync(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<ResponseBody>() {
@@ -329,7 +318,7 @@ public class Instagram {
     public void getFeedByTag(String tag, final com.github.volfor.Callback<TagFeedResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.tagFeed(tag, rankToken).enqueue(new Callback<TagFeedResponse>() {
+        service.tagFeed(tag, session.getRankToken()).enqueue(new Callback<TagFeedResponse>() {
             @Override
             public void onResponse(Call<TagFeedResponse> call, Response<TagFeedResponse> response) {
                 if (response.isSuccessful()) {
@@ -350,9 +339,9 @@ public class Instagram {
         if (callback == null) throw new NullPointerException("callback == null");
 
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("media_id", mediaId);
 
         service.like(mediaId, SIG_KEY_VERSION, generateSignature(data)).enqueue(
@@ -378,7 +367,7 @@ public class Instagram {
     public void getUserFollowers(long userId, String maxId, final com.github.volfor.Callback<FollowersResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.followers(userId, rankToken, maxId).enqueue(new Callback<FollowersResponse>() {
+        service.followers(userId, session.getRankToken(), maxId).enqueue(new Callback<FollowersResponse>() {
             @Override
             public void onResponse(Call<FollowersResponse> call, Response<FollowersResponse> response) {
                 if (response.isSuccessful()) {
@@ -400,11 +389,11 @@ public class Instagram {
     }
 
     public void getSelfFollowers(com.github.volfor.Callback<FollowersResponse> callback) {
-        getUserFollowers(usernameId, callback);
+        getUserFollowers(session.getUsernameId(), callback);
     }
 
     public void getSelfFollowers(String maxId, com.github.volfor.Callback<FollowersResponse> callback) {
-        getUserFollowers(usernameId, maxId, callback);
+        getUserFollowers(session.getUsernameId(), maxId, callback);
     }
 
     public void megaphoneLog(final com.github.volfor.Callback<MegaphoneLogResponse> callback) {
@@ -413,9 +402,9 @@ public class Instagram {
         Map<String, String> params = new HashMap<>();
         params.put("type", "feed_aysf");
         params.put("action", "seen");
-        params.put("_uuid", uuid);
-        params.put("device_id", deviceId);
-        params.put("_csrftoken", token);
+        params.put("_uuid", session.getUuid());
+        params.put("device_id", session.getDeviceId());
+        params.put("_csrftoken", session.getToken());
 
         service.megaphone(params).enqueue(new Callback<MegaphoneLogResponse>() {
             @Override
@@ -434,16 +423,35 @@ public class Instagram {
         });
     }
 
-    public void logout() {
-        sendRequest("accounts/logout/", null);
+    public void logout(final com.github.volfor.Callback<com.github.volfor.responses.Response> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.logout().enqueue(new Callback<com.github.volfor.responses.Response>() {
+            @Override
+            public void onResponse(Call<com.github.volfor.responses.Response> call,
+                                   Response<com.github.volfor.responses.Response> response) {
+
+                if (response.isSuccessful()) {
+                    session.close();
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<com.github.volfor.responses.Response> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void expose() {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("id", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("id", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("experiment", "ig_android_profile_contextual_feed");
 
         sendRequest("qe/expose/", generateSignature(data));
@@ -463,10 +471,10 @@ public class Instagram {
             compression.addProperty("lib_version", "1.3.0");
             compression.addProperty("quality", "87");
 
-            RequestBody multipart = new MultipartBody.Builder(uuid)
+            RequestBody multipart = new MultipartBody.Builder(session.getUuid())
                     .setType(MultipartBody.FORM)
-                    .addFormDataPart("_uuid", uuid)
-                    .addFormDataPart("_csrftoken", token)
+                    .addFormDataPart("_uuid", session.getUuid())
+                    .addFormDataPart("_csrftoken", session.getToken())
                     .addFormDataPart("upload_id", uploadId)
                     .addFormDataPart("image_compression", compression.toString())
                     .addFormDataPart("photo", "pending_media_" + uploadId + ".jpg", body)
@@ -512,11 +520,11 @@ public class Instagram {
         extra.addProperty("source_height", h);
 
         JsonObject data = new JsonObject();
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("media_folder", "Instagram");
         data.addProperty("source_type", 4);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_uuid", uuid);
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_uuid", session.getUuid());
         data.addProperty("caption", caption);
         data.addProperty("upload_id", uploadId);
         data.addProperty("device", getDeviceSetting());
@@ -528,9 +536,9 @@ public class Instagram {
 
     public void editMedia(long mediaId, String captionText) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("caption_text", captionText);
 
         sendRequest("media/" + mediaId + "/edit_media/", generateSignature(data));
@@ -538,18 +546,18 @@ public class Instagram {
 
     public void removeSelftag(long mediaId) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("usertags/" + mediaId + "/remove/", generateSignature(data));
     }
 
     public void mediaInfo(long mediaId) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("media_id", mediaId);
 
         sendRequest("media/" + mediaId + "/info/", generateSignature(data));
@@ -557,9 +565,9 @@ public class Instagram {
 
     public void comment(long mediaId, String commentText) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("comment_text", commentText);
 
         sendRequest("media/" + mediaId + "/comment/", generateSignature(data));
@@ -567,9 +575,9 @@ public class Instagram {
 
     public void deleteComment(long mediaId, long commentId) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("media/" + mediaId + "/comment/" + commentId + "/delete/", generateSignature(data));
     }
@@ -580,18 +588,18 @@ public class Instagram {
 
     public void getProfileData() {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("accounts/current_user/?edit=true", generateSignature(data));
     }
 
     public void editProfile(String url, String phone, String name, String biography, String email, int gender) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("external_url", url);
         data.addProperty("phone_number", phone);
         data.addProperty("username", username);
@@ -608,7 +616,7 @@ public class Instagram {
     }
 
     public void getSelfUsernameInfo() {
-        getUsernameInfo(usernameId);
+        getUsernameInfo(session.getUsernameId());
     }
 
     public void getFollowingRecentActivity() {
@@ -616,11 +624,11 @@ public class Instagram {
     }
 
     public void getUserTags(long usernameId) {
-        sendRequest("usertags/" + usernameId + "/feed/?rank_token=" + rankToken + "&ranked_content=true&", null);
+        sendRequest("usertags/" + usernameId + "/feed/?rank_token=" + session.getRankToken() + "&ranked_content=true&", null);
     }
 
     public void getSelfUserTags() {
-        getUserTags(usernameId);
+        getUserTags(session.getUsernameId());
     }
 
     public void getMediaLikers(long mediaId) {
@@ -632,16 +640,16 @@ public class Instagram {
     }
 
     public void getSelfGeoMedia() {
-        getGeoMedia(usernameId);
+        getGeoMedia(session.getUsernameId());
     }
 
     public void fbUserSearch(String query) {
-        sendRequest("fbsearch/topsearch/?context=blended&query=" + query + "&rank_token=" + rankToken, null);
+        sendRequest("fbsearch/topsearch/?context=blended&query=" + query + "&rank_token=" + session.getRankToken(), null);
     }
 
     public void searchUsers(String query) {
         sendRequest("users/search/?ig_sig_key_version=" + SIG_KEY_VERSION + "&is_typeahead=true&query="
-                + query + "&rank_token=" + rankToken, null);
+                + query + "&rank_token=" + session.getRankToken(), null);
     }
 
     public void searchUsername(String usernameName) {
@@ -649,52 +657,52 @@ public class Instagram {
     }
 
     public void searchTags(String query) {
-        sendRequest("tags/search/?is_typeahead=true&q=" + query + "&rank_token=" + rankToken, null);
+        sendRequest("tags/search/?is_typeahead=true&q=" + query + "&rank_token=" + session.getRankToken(), null);
     }
 
     public void getTimeline() {
-        sendRequest("feed/timeline/?rank_token=" + rankToken + "&ranked_content=true&", null);
+        sendRequest("feed/timeline/?rank_token=" + session.getRankToken() + "&ranked_content=true&", null);
     }
 
     public void getUserFeed(long usernameId, String maxid, String minTimestamp) {
         sendRequest("feed/user/" + usernameId + "/?max_id=" + maxid + "&min_timestamp=" + minTimestamp
-                + "&rank_token=" + rankToken + "&ranked_content=true", null);
+                + "&rank_token=" + session.getRankToken() + "&ranked_content=true", null);
     }
 
     public void getSelfUserFeed(String maxid, String minTimestamp) {
-        getUserFeed(usernameId, maxid, minTimestamp);
+        getUserFeed(session.getUsernameId(), maxid, minTimestamp);
     }
 
     public void getHashtagFeed(String hashtag, String maxid) {
-        sendRequest("feed/tag/" + hashtag + "/?max_id=" + maxid + "&rank_token=" + rankToken + "&ranked_content=true&", null);
+        sendRequest("feed/tag/" + hashtag + "/?max_id=" + maxid + "&rank_token=" + session.getRankToken() + "&ranked_content=true&", null);
     }
 
     public void searchLocation(String query) {
-        sendRequest("fbsearch/places/?rank_token=" + rankToken + "&query=" + query, null);
+        sendRequest("fbsearch/places/?rank_token=" + session.getRankToken() + "&query=" + query, null);
     }
 
     public void getLocationFeed(long locationId, String maxid) {
-        sendRequest("feed/location/" + locationId + "/?max_id=" + maxid + "&rank_token=" + rankToken + "&ranked_content=true&", null);
+        sendRequest("feed/location/" + locationId + "/?max_id=" + maxid + "&rank_token=" + session.getRankToken() + "&ranked_content=true&", null);
     }
 
     public void getPopularFeed() {
-        sendRequest("feed/popular/?people_teaser_supported=1&rank_token=" + rankToken + "&ranked_content=true&", null);
+        sendRequest("feed/popular/?people_teaser_supported=1&rank_token=" + session.getRankToken() + "&ranked_content=true&", null);
     }
 
     public void getUserFollowings(long usernameId, String maxid) {
         sendRequest("friendships/" + usernameId + "/following/?max_id=" + maxid
-                + "&ig_sig_key_version=" + SIG_KEY_VERSION + "&rank_token=" + rankToken, null);
+                + "&ig_sig_key_version=" + SIG_KEY_VERSION + "&rank_token=" + session.getRankToken(), null);
     }
 
     public void getSelfUsersFollowing() {
-        getUserFollowings(usernameId, "");
+        getUserFollowings(session.getUsernameId(), "");
     }
 
     public void unlike(long mediaId) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("media_id", mediaId);
 
         sendRequest("media/" + mediaId + "/unlike/", generateSignature(data));
@@ -706,11 +714,11 @@ public class Instagram {
 
     public void setNameAndPhone(String name, String phone) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
         data.addProperty("first_name", name);
         data.addProperty("phone_number", phone);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("accounts/set_phone_and_name/", generateSignature(data));
     }
@@ -721,50 +729,50 @@ public class Instagram {
 
     public void follow(long userId) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
         data.addProperty("user_id", userId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("friendships/create/" + userId + "/", generateSignature(data));
     }
 
     public void unfollow(long userId) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
         data.addProperty("user_id", userId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("friendships/destroy/" + userId + "/", generateSignature(data));
     }
 
     public void block(long userId) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
         data.addProperty("user_id", userId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("friendships/block/" + userId + "/", generateSignature(data));
     }
 
     public void unblock(long userId) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
         data.addProperty("user_id", userId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("friendships/unblock/" + userId + "/", generateSignature(data));
     }
 
     public void userFriendship(long userId) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
         data.addProperty("user_id", userId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("friendships/show/" + userId + "/", generateSignature(data));
     }
@@ -774,12 +782,12 @@ public class Instagram {
     }
 
     public void deleteMedia(long mediaId) {
-        String id = String.format("%s_%s", mediaId, usernameId);
+        String id = String.format("%s_%s", mediaId, session.getUsernameId());
 
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("media_id", id);
 
         sendRequest("media/" + id + "/delete/", generateSignature(data));
@@ -787,9 +795,9 @@ public class Instagram {
 
     public void changePassword(String newPassword) {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
         data.addProperty("old_password", password);
         data.addProperty("new_password1", newPassword);
         data.addProperty("new_password2", newPassword);
@@ -799,27 +807,27 @@ public class Instagram {
 
     public void removeProfilePicture() {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("accounts/remove_profile_picture/", generateSignature(data));
     }
 
     public void setPrivateAccount() {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("accounts/set_private/", generateSignature(data));
     }
 
     public void setPublicAccount() {
         JsonObject data = new JsonObject();
-        data.addProperty("_uuid", uuid);
-        data.addProperty("_uid", usernameId);
-        data.addProperty("_csrftoken", token);
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
 
         sendRequest("accounts/set_public/", generateSignature(data));
     }
@@ -887,15 +895,15 @@ public class Instagram {
     }
 
     public List<Object> getTotalSelfUserFeed(String minTimestamp) {
-        return getTotalUserFeed(usernameId, minTimestamp);
+        return getTotalUserFeed(session.getUsernameId(), minTimestamp);
     }
 
     public List<Object> getTotalSelfFollowers() {
-        return getTotalFollowers(usernameId);
+        return getTotalFollowers(session.getUsernameId());
     }
 
     public List<Object> getTotalSelfFollowings() {
-        return getTotalFollowings(usernameId);
+        return getTotalFollowings(session.getUsernameId());
     }
 
     public List<Object> getTotalLikedMedia(int scanRate) {
@@ -918,12 +926,6 @@ public class Instagram {
 
     public void syncFromAdressBook(JsonObject contacts) {
         sendRequest("address_book/link/?include=extra_display_name,thumbnails", "contacts=" + contacts.toString());
-    }
-
-    private void setUser(String username, String password) {
-        this.username = username;
-        this.password = password;
-        this.uuid = generateUUID(true);
     }
 
     private boolean sendRequest(String endpoint, String post) {

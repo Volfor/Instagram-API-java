@@ -50,4 +50,7 @@ public interface ApiService {
     @POST("megaphone/log/")
     Call<MegaphoneLogResponse> megaphone(@FieldMap Map<String, String> params);
 
+    @GET("accounts/logout/")
+    Call<Response> logout();
+
 }
