@@ -583,14 +583,30 @@ public class Instagram {
         }
     }
 
-    public void editMedia(long mediaId, String captionText) {
+    public void editMedia(long mediaId, String captionText, final com.github.volfor.Callback<EditMediaResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("caption_text", captionText);
 
-        sendRequest("media/" + mediaId + "/edit_media/", generateSignature(data));
+        service.editMedia(mediaId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<EditMediaResponse>() {
+            @Override
+            public void onResponse(Call<EditMediaResponse> call, Response<EditMediaResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<EditMediaResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void removeSelftag(long mediaId) {

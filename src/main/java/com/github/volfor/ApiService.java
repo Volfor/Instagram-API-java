@@ -67,4 +67,10 @@ public interface ApiService {
     Call<UploadPhotoResponse> configure(@Field("ig_sig_key_version") String sigKeyVersion,
                                         @Field("signed_body") String signedBody);
 
+    @FormUrlEncoded
+    @POST("media/{mediaId}/edit_media/")
+    Call<EditMediaResponse> editMedia(@Path("mediaId") long mediaId,
+                                      @Field("ig_sig_key_version") String sigKeyVersion,
+                                      @Field("signed_body") String signedBody);
+
 }
