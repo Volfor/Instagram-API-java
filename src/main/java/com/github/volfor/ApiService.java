@@ -1,6 +1,7 @@
 package com.github.volfor;
 
 import com.github.volfor.responses.*;
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.*;
@@ -56,5 +57,14 @@ public interface ApiService {
     @FormUrlEncoded
     @POST("qe/expose/")
     Call<Response> expose(@Field("ig_sig_key_version") String sigKeyVersion, @Field("signed_body") String signedBody);
+
+    @Headers({"X-IG-Capabilities: 3Q4=", "X-IG-Connection-Type: WIFI", "Accept-Encoding: gzip, deflate"})
+    @POST("upload/photo/")
+    Call<ResponseBody> uploadPhoto(@Body RequestBody body);
+
+    @FormUrlEncoded
+    @POST("media/configure/?")
+    Call<UploadPhotoResponse> configure(@Field("ig_sig_key_version") String sigKeyVersion,
+                                        @Field("signed_body") String signedBody);
 
 }

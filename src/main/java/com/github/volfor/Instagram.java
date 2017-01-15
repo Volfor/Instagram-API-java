@@ -475,81 +475,112 @@ public class Instagram {
         });
     }
 
-    public void uploadPhoto(String filename, String caption, String uploadId) {
-        if (uploadId == null) {
-            uploadId = String.valueOf(System.currentTimeMillis());
-        }
+    private void expose() throws IOException {
+        JsonObject data = new JsonObject();
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("id", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
+        data.addProperty("experiment", "ig_android_profile_contextual_feed");
 
-        try {
-            File photo = new File(filename);
-            RequestBody body = RequestBody.create(MediaType.parse("application/octet-stream"), photo);
-
-            JsonObject compression = new JsonObject();
-            compression.addProperty("lib_name", "jt");
-            compression.addProperty("lib_version", "1.3.0");
-            compression.addProperty("quality", "87");
-
-            RequestBody multipart = new MultipartBody.Builder(session.getUuid())
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("_uuid", session.getUuid())
-                    .addFormDataPart("_csrftoken", session.getToken())
-                    .addFormDataPart("upload_id", uploadId)
-                    .addFormDataPart("image_compression", compression.toString())
-                    .addFormDataPart("photo", "pending_media_" + uploadId + ".jpg", body)
-                    .build();
-
-            Request request = new Request.Builder()
-                    .header("X-IG-Capabilities", "3Q4=")
-                    .header("X-IG-Connection-Type", "WIFI")
-                    .header("Cookie2", "$Version=1")
-                    .header("Accept-Language", "en-US")
-                    .header("Accept-Encoding", "gzip, deflate")
-                    .header("Content-type", multipart.contentType().toString())
-                    .header("Connection", "close")
-                    .header("User-Agent", USER_AGENT)
-                    .url(API_URL + "upload/photo/")
-                    .post(multipart)
-                    .build();
-
-            okhttp3.Response response = retrofit.callFactory().newCall(request).execute();
-            if (response.code() == 200) {
-                if (configure(uploadId, filename, caption)) {
-//                    expose();
-                }
-            }
-            System.out.println(response.code() + ": " + response.body().string());
-        } catch (IOException e) {
-            e.printStackTrace();
+        Response response = service.expose(SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            LOG.logp(Level.WARNING, LOG.getName(), "expose",
+                    "Expose failed with message: " + parseErrorMessage(response.errorBody()));
         }
     }
 
-    private boolean configure(String uploadId, String filename, String caption) throws IOException {
-        BufferedImage bimage = ImageIO.read(new File(filename));
-        int w = bimage.getWidth();
-        int h = bimage.getHeight();
+    public void uploadPhoto(final String filename, final String caption, final com.github.volfor.Callback<UploadPhotoResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
 
-        JsonObject edits = new JsonObject();
-        edits.addProperty("crop_original_size", String.format("[%s.0,%s.0]", w, h));
-        edits.addProperty("crop_center", "[0.0,0.0]");
-        edits.addProperty("crop_zoom", 1.0);
+        final String uploadId = String.valueOf(System.currentTimeMillis());
 
-        JsonObject extra = new JsonObject();
-        extra.addProperty("source_width", w);
-        extra.addProperty("source_height", h);
+        JsonObject compression = new JsonObject();
+        compression.addProperty("lib_name", "jt");
+        compression.addProperty("lib_version", "1.3.0");
+        compression.addProperty("quality", "87");
 
-        JsonObject data = new JsonObject();
-        data.addProperty("_csrftoken", session.getToken());
-        data.addProperty("media_folder", "Instagram");
-        data.addProperty("source_type", 4);
-        data.addProperty("_uid", session.getUsernameId());
-        data.addProperty("_uuid", session.getUuid());
-        data.addProperty("caption", caption);
-        data.addProperty("upload_id", uploadId);
-        data.addProperty("device", getDeviceSetting());
-        data.add("edits", edits);
-        data.add("extra", extra);
+        File photo = new File(filename);
+        RequestBody body = RequestBody.create(MediaType.parse("application/octet-stream"), photo);
 
-        return sendRequest("media/configure/?", generateSignature(data));
+        RequestBody multipart = new MultipartBody.Builder(session.getUuid())
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("_uuid", session.getUuid())
+                .addFormDataPart("_csrftoken", session.getToken())
+                .addFormDataPart("upload_id", uploadId)
+                .addFormDataPart("image_compression", compression.toString())
+                .addFormDataPart("photo", "pending_media_" + uploadId + ".jpg", body)
+                .build();
+
+        service.uploadPhoto(multipart).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    configure(uploadId, filename, caption, callback);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
+    }
+
+    private void configure(String uploadId, String filename, String caption,
+                           final com.github.volfor.Callback<UploadPhotoResponse> callback) {
+
+        try {
+            BufferedImage buffimage = ImageIO.read(new File(filename));
+
+            int w = buffimage.getWidth();
+            int h = buffimage.getHeight();
+
+            JsonObject edits = new JsonObject();
+            edits.addProperty("crop_original_size", String.format("[%s.0,%s.0]", w, h));
+            edits.addProperty("crop_center", "[0.0,0.0]");
+            edits.addProperty("crop_zoom", 1.0);
+
+            JsonObject extra = new JsonObject();
+            extra.addProperty("source_width", w);
+            extra.addProperty("source_height", h);
+
+            JsonObject data = new JsonObject();
+            data.addProperty("_csrftoken", session.getToken());
+            data.addProperty("media_folder", "Instagram");
+            data.addProperty("source_type", 4);
+            data.addProperty("_uid", session.getUsernameId());
+            data.addProperty("_uuid", session.getUuid());
+            data.addProperty("caption", caption);
+            data.addProperty("upload_id", uploadId);
+            data.addProperty("device", getDeviceSetting());
+            data.add("edits", edits);
+            data.add("extra", extra);
+
+            service.configure(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<UploadPhotoResponse>() {
+                @Override
+                public void onResponse(Call<UploadPhotoResponse> call, Response<UploadPhotoResponse> response) {
+                    if (response.isSuccessful()) {
+                        try {
+                            expose();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        callback.onSuccess(response.body());
+                    } else {
+                        callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<UploadPhotoResponse> call, Throwable t) {
+                    callback.onFailure(t);
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void editMedia(long mediaId, String captionText) {
