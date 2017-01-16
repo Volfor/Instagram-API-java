@@ -660,14 +660,30 @@ public class Instagram {
         });
     }
 
-    public void comment(long mediaId, String commentText) {
+    public void comment(long mediaId, String commentText, final com.github.volfor.Callback<CommentResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("comment_text", commentText);
 
-        sendRequest("media/" + mediaId + "/comment/", generateSignature(data));
+        service.comment(mediaId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<CommentResponse>() {
+            @Override
+            public void onResponse(Call<CommentResponse> call, Response<CommentResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<CommentResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void deleteComment(long mediaId, long commentId) {

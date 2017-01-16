@@ -82,7 +82,12 @@ public interface ApiService {
     @FormUrlEncoded
     @POST("media/{mediaId}/info/")
     Call<MediaInfoResponse> mediaInfo(@Path("mediaId") long mediaId,
-                              @Field("ig_sig_key_version") String sigKeyVersion,
-                              @Field("signed_body") String signedBody);
+                                      @Field("ig_sig_key_version") String sigKeyVersion,
+                                      @Field("signed_body") String signedBody);
 
+    @FormUrlEncoded
+    @POST("media/{mediaId}/comment/")
+    Call<CommentResponse> comment(@Path("mediaId") long mediaId,
+                          @Field("ig_sig_key_version") String sigKeyVersion,
+                          @Field("signed_body") String signedBody);
 }
