@@ -634,14 +634,30 @@ public class Instagram {
         });
     }
 
-    public void mediaInfo(long mediaId) {
+    public void mediaInfo(long mediaId, final com.github.volfor.Callback<MediaInfoResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("media_id", mediaId);
 
-        sendRequest("media/" + mediaId + "/info/", generateSignature(data));
+        service.mediaInfo(mediaId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<MediaInfoResponse>() {
+            @Override
+            public void onResponse(Call<MediaInfoResponse> call, Response<MediaInfoResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MediaInfoResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void comment(long mediaId, String commentText) {

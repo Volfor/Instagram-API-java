@@ -79,4 +79,10 @@ public interface ApiService {
                                       @Field("ig_sig_key_version") String sigKeyVersion,
                                       @Field("signed_body") String signedBody);
 
+    @FormUrlEncoded
+    @POST("media/{mediaId}/info/")
+    Call<MediaInfoResponse> mediaInfo(@Path("mediaId") long mediaId,
+                              @Field("ig_sig_key_version") String sigKeyVersion,
+                              @Field("signed_body") String signedBody);
+
 }
