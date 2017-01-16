@@ -69,7 +69,13 @@ public interface ApiService {
 
     @FormUrlEncoded
     @POST("media/{mediaId}/edit_media/")
-    Call<EditMediaResponse> editMedia(@Path("mediaId") long mediaId,
+    Call<MediaResponse> editMedia(@Path("mediaId") long mediaId,
+                                  @Field("ig_sig_key_version") String sigKeyVersion,
+                                  @Field("signed_body") String signedBody);
+
+    @FormUrlEncoded
+    @POST("usertags/{mediaId}/remove/")
+    Call<MediaResponse> removeUsertag(@Path("mediaId") long mediaId,
                                       @Field("ig_sig_key_version") String sigKeyVersion,
                                       @Field("signed_body") String signedBody);
 

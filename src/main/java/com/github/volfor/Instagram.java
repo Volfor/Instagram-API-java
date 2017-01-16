@@ -583,7 +583,7 @@ public class Instagram {
         }
     }
 
-    public void editMedia(long mediaId, String captionText, final com.github.volfor.Callback<EditMediaResponse> callback) {
+    public void editMedia(long mediaId, String captionText, final com.github.volfor.Callback<MediaResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
         JsonObject data = new JsonObject();
@@ -592,9 +592,9 @@ public class Instagram {
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("caption_text", captionText);
 
-        service.editMedia(mediaId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<EditMediaResponse>() {
+        service.editMedia(mediaId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<MediaResponse>() {
             @Override
-            public void onResponse(Call<EditMediaResponse> call, Response<EditMediaResponse> response) {
+            public void onResponse(Call<MediaResponse> call, Response<MediaResponse> response) {
                 if (response.isSuccessful()) {
                     callback.onSuccess(response.body());
                 } else {
@@ -603,19 +603,35 @@ public class Instagram {
             }
 
             @Override
-            public void onFailure(Call<EditMediaResponse> call, Throwable t) {
+            public void onFailure(Call<MediaResponse> call, Throwable t) {
                 callback.onFailure(t);
             }
         });
     }
 
-    public void removeSelftag(long mediaId) {
+    public void removeSelftag(long mediaId, final com.github.volfor.Callback<MediaResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
 
-        sendRequest("usertags/" + mediaId + "/remove/", generateSignature(data));
+        service.removeUsertag(mediaId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<MediaResponse>() {
+            @Override
+            public void onResponse(Call<MediaResponse> call, Response<MediaResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MediaResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void mediaInfo(long mediaId) {
