@@ -101,4 +101,9 @@ public interface ApiService {
     @GET("discover/explore/")
     Call<ExploreResponse> explore();
 
+    @FormUrlEncoded
+    @POST("accounts/current_user/?edit=true")
+    Call<ProfileDataResponse> profile(@Field("ig_sig_key_version") String sigKeyVersion,
+                                      @Field("signed_body") String signedBody);
+
 }

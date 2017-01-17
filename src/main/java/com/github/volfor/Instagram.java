@@ -1,6 +1,7 @@
 package com.github.volfor;
 
 import com.github.volfor.models.Experiment;
+import com.github.volfor.models.ProfileData;
 import com.github.volfor.responses.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -736,13 +737,27 @@ public class Instagram {
         });
     }
 
-    public void getProfileData() {
+    public void getProfileData(final com.github.volfor.Callback<ProfileData> callback) {
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
 
-        sendRequest("accounts/current_user/?edit=true", generateSignature(data));
+        service.profile(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<ProfileDataResponse>() {
+            @Override
+            public void onResponse(Call<ProfileDataResponse> call, Response<ProfileDataResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body().getProfileData());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ProfileDataResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void editProfile(String url, String phone, String name, String biography, String email, int gender) {
