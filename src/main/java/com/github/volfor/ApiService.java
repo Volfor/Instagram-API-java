@@ -111,5 +111,7 @@ public interface ApiService {
     Call<ProfileDataResponse> editProfile(@Field("ig_sig_key_version") String sigKeyVersion,
                                           @Field("signed_body") String signedBody);
 
+    @GET("users/{usernameId}/info/")
+    Call<UserInfoResponse> userInfo(@Path("usernameId") long usernameId);
 
 }

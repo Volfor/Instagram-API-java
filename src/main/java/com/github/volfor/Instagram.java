@@ -3,6 +3,7 @@ package com.github.volfor;
 import com.github.volfor.models.Experiment;
 import com.github.volfor.models.Profile;
 import com.github.volfor.models.ProfileData;
+import com.github.volfor.models.User;
 import com.github.volfor.responses.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -795,12 +796,28 @@ public class Instagram {
         });
     }
 
-    public void getUsernameInfo(long usernameId) {
-        sendRequest("users/" + usernameId + "/info/", null);
+    public void getUserInfo(long usernameId, final com.github.volfor.Callback<User> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.userInfo(usernameId).enqueue(new Callback<UserInfoResponse>() {
+            @Override
+            public void onResponse(Call<UserInfoResponse> call, Response<UserInfoResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body().getUser());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserInfoResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
-    public void getSelfUsernameInfo() {
-        getUsernameInfo(session.getUsernameId());
+    public void getSelfInfo(com.github.volfor.Callback<User> callback) {
+        getUserInfo(session.getUsernameId(), callback);
     }
 
     public void getFollowingRecentActivity() {
