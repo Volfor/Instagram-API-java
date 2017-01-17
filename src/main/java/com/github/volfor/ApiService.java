@@ -106,4 +106,10 @@ public interface ApiService {
     Call<ProfileDataResponse> profile(@Field("ig_sig_key_version") String sigKeyVersion,
                                       @Field("signed_body") String signedBody);
 
+    @FormUrlEncoded
+    @POST("accounts/edit_profile/")
+    Call<ProfileDataResponse> editProfile(@Field("ig_sig_key_version") String sigKeyVersion,
+                                          @Field("signed_body") String signedBody);
+
+
 }

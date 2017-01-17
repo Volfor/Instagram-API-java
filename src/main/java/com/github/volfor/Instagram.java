@@ -1,6 +1,7 @@
 package com.github.volfor;
 
 import com.github.volfor.models.Experiment;
+import com.github.volfor.models.Profile;
 import com.github.volfor.models.ProfileData;
 import com.github.volfor.responses.*;
 import com.google.gson.JsonObject;
@@ -738,6 +739,8 @@ public class Instagram {
     }
 
     public void getProfileData(final com.github.volfor.Callback<ProfileData> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
@@ -760,20 +763,36 @@ public class Instagram {
         });
     }
 
-    public void editProfile(String url, String phone, String name, String biography, String email, int gender) {
+    public void editProfile(Profile profile, final com.github.volfor.Callback<ProfileData> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
-        data.addProperty("external_url", url);
-        data.addProperty("phone_number", phone);
         data.addProperty("username", username);
-        data.addProperty("full_name", name);
-        data.addProperty("biography", biography);
-        data.addProperty("email", email);
-        data.addProperty("gender", gender);
+        data.addProperty("email", profile.getEmail());
+        if (profile.getUrl() != null) data.addProperty("external_url", profile.getUrl());
+        if (profile.getPhone() != null) data.addProperty("phone_number", profile.getPhone());
+        if (profile.getName() != null) data.addProperty("full_name", profile.getName());
+        if (profile.getBiography() != null) data.addProperty("biography", profile.getBiography());
+        if (profile.getGender() != null) data.addProperty("gender", profile.getGender());
 
-        sendRequest("accounts/edit_profile/", generateSignature(data));
+        service.editProfile(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<ProfileDataResponse>() {
+            @Override
+            public void onResponse(Call<ProfileDataResponse> call, Response<ProfileDataResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body().getProfileData());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ProfileDataResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getUsernameInfo(long usernameId) {
