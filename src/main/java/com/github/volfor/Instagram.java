@@ -716,8 +716,24 @@ public class Instagram {
                 });
     }
 
-    public void explore() {
-        sendRequest("discover/explore/", null);
+    public void explore(final com.github.volfor.Callback<ExploreResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.explore().enqueue(new Callback<ExploreResponse>() {
+            @Override
+            public void onResponse(Call<ExploreResponse> call, Response<ExploreResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ExploreResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getProfileData() {
