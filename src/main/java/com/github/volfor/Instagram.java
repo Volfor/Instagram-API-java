@@ -820,8 +820,24 @@ public class Instagram {
         getUserInfo(session.getUsernameId(), callback);
     }
 
-    public void getFollowingRecentActivity() {
-        sendRequest("news/?", null);
+    public void getFollowingRecentActivity(final com.github.volfor.Callback<FollowingRecentActivityResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.news().enqueue(new Callback<FollowingRecentActivityResponse>() {
+            @Override
+            public void onResponse(Call<FollowingRecentActivityResponse> call, Response<FollowingRecentActivityResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FollowingRecentActivityResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getUserTags(long usernameId) {

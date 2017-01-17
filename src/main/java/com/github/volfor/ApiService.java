@@ -114,4 +114,7 @@ public interface ApiService {
     @GET("users/{usernameId}/info/")
     Call<UserInfoResponse> userInfo(@Path("usernameId") long usernameId);
 
+    @GET("news/?")
+    Call<FollowingRecentActivityResponse> news();
+
 }
