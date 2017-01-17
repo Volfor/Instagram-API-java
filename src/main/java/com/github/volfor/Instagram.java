@@ -840,12 +840,28 @@ public class Instagram {
         });
     }
 
-    public void getUserTags(long usernameId) {
-        sendRequest("usertags/" + usernameId + "/feed/?rank_token=" + session.getRankToken() + "&ranked_content=true&", null);
+    public void getUsertags(long usernameId, final com.github.volfor.Callback<UsertagsResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.usertags(usernameId, session.getRankToken()).enqueue(new Callback<UsertagsResponse>() {
+            @Override
+            public void onResponse(Call<UsertagsResponse> call, Response<UsertagsResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UsertagsResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
-    public void getSelfUserTags() {
-        getUserTags(session.getUsernameId());
+    public void getSelfUsertags(com.github.volfor.Callback<UsertagsResponse> callback) {
+        getUsertags(session.getUsernameId(), callback);
     }
 
     public void getMediaLikers(long mediaId) {

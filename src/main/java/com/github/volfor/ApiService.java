@@ -117,4 +117,7 @@ public interface ApiService {
     @GET("news/?")
     Call<FollowingRecentActivityResponse> news();
 
+    @GET("usertags/{usernameId}/feed/?ranked_content=true")
+    Call<UsertagsResponse> usertags(@Path("usernameId") long usernameId, @Query("rank_token") String rankToken);
+
 }
