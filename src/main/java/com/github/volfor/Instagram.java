@@ -985,13 +985,30 @@ public class Instagram {
         });
     }
 
-    public void getUserFeed(long usernameId, String maxid, String minTimestamp) {
-        sendRequest("feed/user/" + usernameId + "/?max_id=" + maxid + "&min_timestamp=" + minTimestamp
-                + "&rank_token=" + session.getRankToken() + "&ranked_content=true", null);
+    public void getUserFeed(long usernameId, String maxId, long minTimestamp,
+                            final com.github.volfor.Callback<UserFeedResponse> callback) {
+
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.feed(usernameId, maxId, minTimestamp, session.getRankToken()).enqueue(new Callback<UserFeedResponse>() {
+            @Override
+            public void onResponse(Call<UserFeedResponse> call, Response<UserFeedResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserFeedResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
-    public void getSelfUserFeed(String maxid, String minTimestamp) {
-        getUserFeed(session.getUsernameId(), maxid, minTimestamp);
+    public void getSelfFeed(String maxId, long minTimestamp, com.github.volfor.Callback<UserFeedResponse> callback) {
+        getUserFeed(session.getUsernameId(), maxId, minTimestamp, callback);
     }
 
     public void getHashtagFeed(String hashtag, String maxid) {
@@ -1200,7 +1217,7 @@ public class Instagram {
         String nextMaxId = "";
 
         while (true) {
-            getUserFeed(usernameId, nextMaxId, minTimestamp);
+//            getUserFeed(usernameId, nextMaxId, minTimestamp);
             JsonObject temp = lastJson;
 
             for (Object item : temp.getAsJsonArray("items")) {
