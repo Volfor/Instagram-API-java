@@ -24,8 +24,8 @@ public interface ApiService {
     @GET("friendships/autocomplete_user_list/")
     Call<AutocompleteUserListResponse> autocompleteUserList();
 
-    @GET("feed/timeline/")
-    Call<TimelineFeedResponse> timeline();
+    @GET("feed/timeline/?ranked_content=true")
+    Call<TimelineFeedResponse> timeline(@Query("rank_token") String rankToken);
 
     @GET("direct_v2/inbox/?")
     Call<V2InboxResponse> directv2Inbox();

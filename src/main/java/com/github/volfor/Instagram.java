@@ -232,7 +232,7 @@ public class Instagram {
     }
 
     private void timelineFeed() throws IOException {
-        Response response = service.timeline().execute();
+        Response response = service.timeline(session.getRankToken()).execute();
         if (!response.isSuccessful()) {
             LOG.logp(Level.WARNING, LOG.getName(), "timelineFeed",
                     "Getting timeline feed failed with message: " + parseErrorMessage(response.errorBody()));
@@ -242,7 +242,7 @@ public class Instagram {
     public void timelineFeed(final com.github.volfor.Callback<TimelineFeedResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.timeline().enqueue(new Callback<TimelineFeedResponse>() {
+        service.timeline(session.getRankToken()).enqueue(new Callback<TimelineFeedResponse>() {
             @Override
             public void onResponse(Call<TimelineFeedResponse> call, Response<TimelineFeedResponse> response) {
                 if (response.isSuccessful()) {
@@ -983,10 +983,6 @@ public class Instagram {
                 callback.onFailure(t);
             }
         });
-    }
-
-    public void getTimeline() {
-        sendRequest("feed/timeline/?rank_token=" + session.getRankToken() + "&ranked_content=true&", null);
     }
 
     public void getUserFeed(long usernameId, String maxid, String minTimestamp) {
