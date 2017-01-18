@@ -925,9 +925,24 @@ public class Instagram {
         });
     }
 
-    public void searchUsers(String query) {
-        sendRequest("users/search/?ig_sig_key_version=" + SIG_KEY_VERSION + "&is_typeahead=true&query="
-                + query + "&rank_token=" + session.getRankToken(), null);
+    public void searchUsers(String query, final com.github.volfor.Callback<SearchUserResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.searchUser(SIG_KEY_VERSION, query, session.getRankToken()).enqueue(new Callback<SearchUserResponse>() {
+            @Override
+            public void onResponse(Call<SearchUserResponse> call, Response<SearchUserResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<SearchUserResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void searchUsername(String usernameName) {

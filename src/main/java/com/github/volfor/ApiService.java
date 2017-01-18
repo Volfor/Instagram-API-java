@@ -129,4 +129,9 @@ public interface ApiService {
     @GET("fbsearch/topsearch/?context=blended")
     Call<FbSearchResponse> fbSearch(@Query("query") String query, @Query("rank_token") String rankToken);
 
+    @GET("users/search/?is_typeahead=true")
+    Call<SearchUserResponse> searchUser(@Query("ig_sig_key_version") String sigKeyVersion,
+                                        @Query("query") String query,
+                                        @Query("rank_token") String rankToken);
+
 }
