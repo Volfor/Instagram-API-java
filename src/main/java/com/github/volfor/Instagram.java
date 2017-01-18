@@ -1031,12 +1031,12 @@ public class Instagram {
         });
     }
 
-    public void fbLocationSearch(String query, final com.github.volfor.Callback<FbSearchLocationResponse> callback) {
+    public void searchLocation(String query, final com.github.volfor.Callback<SearchLocationResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.fbSearchLocation(query, session.getRankToken()).enqueue(new Callback<FbSearchLocationResponse>() {
+        service.fbSearchLocation(query, session.getRankToken()).enqueue(new Callback<SearchLocationResponse>() {
             @Override
-            public void onResponse(Call<FbSearchLocationResponse> call, Response<FbSearchLocationResponse> response) {
+            public void onResponse(Call<SearchLocationResponse> call, Response<SearchLocationResponse> response) {
                 if (response.isSuccessful()) {
                     callback.onSuccess(response.body());
                 } else {
@@ -1045,7 +1045,7 @@ public class Instagram {
             }
 
             @Override
-            public void onFailure(Call<FbSearchLocationResponse> call, Throwable t) {
+            public void onFailure(Call<SearchLocationResponse> call, Throwable t) {
                 callback.onFailure(t);
             }
         });

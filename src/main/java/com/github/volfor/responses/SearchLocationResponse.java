@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class FbSearchLocationResponse extends Response {
+public class SearchLocationResponse extends Response {
 
     private List<LocationItem> items;
     @SerializedName("has_more")

@@ -152,6 +152,6 @@ public interface ApiService {
                                       @Query("rank_token") String rankToken);
 
     @GET("fbsearch/places/")
-    Call<FbSearchLocationResponse> fbSearchLocation(@Query("query") String query, @Query("rank_token") String rankToken);
+    Call<SearchLocationResponse> fbSearchLocation(@Query("query") String query, @Query("rank_token") String rankToken);
 
 }
