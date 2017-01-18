@@ -126,4 +126,7 @@ public interface ApiService {
     @GET("maps/user/{usernameId}/")
     Call<GeoMediaResponse> geoMedia(@Path("usernameId") long usernameId);
 
+    @GET("fbsearch/topsearch/?context=blended")
+    Call<FbSearchResponse> fbSearch(@Query("query") String query, @Query("rank_token") String rankToken);
+
 }

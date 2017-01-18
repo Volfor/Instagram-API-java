@@ -905,8 +905,24 @@ public class Instagram {
         getGeoMedia(session.getUsernameId(), callback);
     }
 
-    public void fbUserSearch(String query) {
-        sendRequest("fbsearch/topsearch/?context=blended&query=" + query + "&rank_token=" + session.getRankToken(), null);
+    public void fbUserSearch(String query, final com.github.volfor.Callback<FbSearchResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.fbSearch(query, session.getRankToken()).enqueue(new Callback<FbSearchResponse>() {
+            @Override
+            public void onResponse(Call<FbSearchResponse> call, Response<FbSearchResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FbSearchResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void searchUsers(String query) {
