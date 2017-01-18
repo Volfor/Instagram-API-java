@@ -137,4 +137,7 @@ public interface ApiService {
     @GET("users/{username}/usernameinfo/")
     Call<UserInfoResponse> search(@Path("username") String username);
 
+    @GET("tags/search/?is_typeahead=true")
+    Call<SearchTagResponse> searchTags(@Query("q") String query, @Query("rank_token") String rankToken);
+
 }

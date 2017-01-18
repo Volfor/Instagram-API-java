@@ -965,8 +965,24 @@ public class Instagram {
         });
     }
 
-    public void searchTags(String query) {
-        sendRequest("tags/search/?is_typeahead=true&q=" + query + "&rank_token=" + session.getRankToken(), null);
+    public void searchTags(String query, final com.github.volfor.Callback<SearchTagResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.searchTags(query, session.getRankToken()).enqueue(new Callback<SearchTagResponse>() {
+            @Override
+            public void onResponse(Call<SearchTagResponse> call, Response<SearchTagResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<SearchTagResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getTimeline() {
