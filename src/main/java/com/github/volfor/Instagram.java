@@ -1011,8 +1011,24 @@ public class Instagram {
         getUserFeed(session.getUsernameId(), maxId, minTimestamp, callback);
     }
 
-    public void getHashtagFeed(String hashtag, String maxid) {
-        sendRequest("feed/tag/" + hashtag + "/?max_id=" + maxid + "&rank_token=" + session.getRankToken() + "&ranked_content=true&", null);
+    public void getHashtagFeed(String hashtag, String maxId, final com.github.volfor.Callback<TagFeedResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.hashtagFeed(hashtag, maxId, session.getRankToken()).enqueue(new Callback<TagFeedResponse>() {
+            @Override
+            public void onResponse(Call<TagFeedResponse> call, Response<TagFeedResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<TagFeedResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void searchLocation(String query) {

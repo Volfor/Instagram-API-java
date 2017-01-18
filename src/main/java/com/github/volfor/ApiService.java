@@ -146,4 +146,9 @@ public interface ApiService {
                                 @Query("min_timestamp") long minTimestamp,
                                 @Query("rank_token") String rankToken);
 
+    @GET("feed/tag/{hashtag}/?ranked_content=true")
+    Call<TagFeedResponse> hashtagFeed(@Path("hashtag") String hashtag,
+                                      @Query("max_id") String maxId,
+                                      @Query("rank_token") String rankToken);
+
 }
