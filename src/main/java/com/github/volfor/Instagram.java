@@ -1031,8 +1031,24 @@ public class Instagram {
         });
     }
 
-    public void searchLocation(String query) {
-        sendRequest("fbsearch/places/?rank_token=" + session.getRankToken() + "&query=" + query, null);
+    public void fbLocationSearch(String query, final com.github.volfor.Callback<FbSearchLocationResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.fbSearchLocation(query, session.getRankToken()).enqueue(new Callback<FbSearchLocationResponse>() {
+            @Override
+            public void onResponse(Call<FbSearchLocationResponse> call, Response<FbSearchLocationResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FbSearchLocationResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getLocationFeed(long locationId, String maxid) {
