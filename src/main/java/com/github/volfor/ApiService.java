@@ -134,4 +134,7 @@ public interface ApiService {
                                         @Query("query") String query,
                                         @Query("rank_token") String rankToken);
 
+    @GET("users/{username}/usernameinfo/")
+    Call<UserInfoResponse> search(@Path("username") String username);
+
 }
