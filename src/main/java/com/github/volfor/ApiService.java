@@ -123,4 +123,7 @@ public interface ApiService {
     @GET("media/{mediaId}/likers/?")
     Call<MediaLikersResponse> likers(@Path("mediaId") long mediaId);
 
+    @GET("maps/user/{usernameId}/")
+    Call<GeoMediaResponse> geoMedia(@Path("usernameId") long usernameId);
+
 }

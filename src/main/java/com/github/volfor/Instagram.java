@@ -1,9 +1,6 @@
 package com.github.volfor;
 
-import com.github.volfor.models.Experiment;
-import com.github.volfor.models.Profile;
-import com.github.volfor.models.ProfileData;
-import com.github.volfor.models.User;
+import com.github.volfor.models.*;
 import com.github.volfor.responses.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -884,12 +881,28 @@ public class Instagram {
         });
     }
 
-    public void getGeoMedia(long usernameId) {
-        sendRequest("maps/user/" + usernameId + "/", null);
+    public void getGeoMedia(long usernameId, final com.github.volfor.Callback<List<GeoMedia>> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.geoMedia(usernameId).enqueue(new Callback<GeoMediaResponse>() {
+            @Override
+            public void onResponse(Call<GeoMediaResponse> call, Response<GeoMediaResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body().getGeoMedia());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<GeoMediaResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
-    public void getSelfGeoMedia() {
-        getGeoMedia(session.getUsernameId());
+    public void getSelfGeoMedia(com.github.volfor.Callback<List<GeoMedia>> callback) {
+        getGeoMedia(session.getUsernameId(), callback);
     }
 
     public void fbUserSearch(String query) {
