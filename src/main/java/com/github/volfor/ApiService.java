@@ -120,4 +120,7 @@ public interface ApiService {
     @GET("usertags/{usernameId}/feed/?ranked_content=true")
     Call<UsertagsResponse> usertags(@Path("usernameId") long usernameId, @Query("rank_token") String rankToken);
 
+    @GET("media/{mediaId}/likers/?")
+    Call<MediaLikersResponse> likers(@Path("mediaId") long mediaId);
+
 }

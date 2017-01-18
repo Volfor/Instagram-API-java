@@ -864,8 +864,24 @@ public class Instagram {
         getUsertags(session.getUsernameId(), callback);
     }
 
-    public void getMediaLikers(long mediaId) {
-        sendRequest("media/" + mediaId + "/likers/?", null);
+    public void getMediaLikers(long mediaId, final com.github.volfor.Callback<MediaLikersResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.likers(mediaId).enqueue(new Callback<MediaLikersResponse>() {
+            @Override
+            public void onResponse(Call<MediaLikersResponse> call, Response<MediaLikersResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MediaLikersResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getGeoMedia(long usernameId) {
