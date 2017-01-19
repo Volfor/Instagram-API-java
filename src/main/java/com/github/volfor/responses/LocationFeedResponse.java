@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class LocationFeedResponse {
+public class LocationFeedResponse extends Response {
 
     private List<Media> items;
     @SerializedName("ranked_items")

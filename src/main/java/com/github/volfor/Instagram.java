@@ -1071,8 +1071,24 @@ public class Instagram {
         });
     }
 
-    public void getPopularFeed() {
-        sendRequest("feed/popular/?people_teaser_supported=1&rank_token=" + session.getRankToken() + "&ranked_content=true&", null);
+    public void getPopularFeed(final com.github.volfor.Callback<PopularFeedResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.popular(session.getRankToken()).enqueue(new Callback<PopularFeedResponse>() {
+            @Override
+            public void onResponse(Call<PopularFeedResponse> call, Response<PopularFeedResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<PopularFeedResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getUserFollowings(long usernameId, String maxid) {
