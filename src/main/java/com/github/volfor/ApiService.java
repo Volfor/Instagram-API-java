@@ -168,4 +168,10 @@ public interface ApiService {
                                       @Query("ig_sig_key_version") String sigKeyVersion,
                                       @Query("rank_token") String rankToken);
 
+    @FormUrlEncoded
+    @POST("media/{mediaId}/unlike/")
+    Call<Response> unlike(@Path("mediaId") long mediaId,
+                          @Field("ig_sig_key_version") String sigKeyVersion,
+                          @Field("signed_body") String signedBody);
+
 }
