@@ -1051,8 +1051,24 @@ public class Instagram {
         });
     }
 
-    public void getLocationFeed(long locationId, String maxid) {
-        sendRequest("feed/location/" + locationId + "/?max_id=" + maxid + "&rank_token=" + session.getRankToken() + "&ranked_content=true&", null);
+    public void getLocationFeed(long locationId, String maxId, final com.github.volfor.Callback<LocationFeedResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.locationFeed(locationId, maxId, session.getRankToken()).enqueue(new Callback<LocationFeedResponse>() {
+            @Override
+            public void onResponse(Call<LocationFeedResponse> call, Response<LocationFeedResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<LocationFeedResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getPopularFeed() {

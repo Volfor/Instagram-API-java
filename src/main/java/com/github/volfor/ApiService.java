@@ -154,4 +154,9 @@ public interface ApiService {
     @GET("fbsearch/places/")
     Call<SearchLocationResponse> fbSearchLocation(@Query("query") String query, @Query("rank_token") String rankToken);
 
+    @GET("feed/location/{locationId}/?ranked_content=true")
+    Call<LocationFeedResponse> locationFeed(@Path("locationId") long locationId,
+                                            @Query("max_id") String maxId,
+                                            @Query("rank_token") String rankToken);
+
 }
