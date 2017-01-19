@@ -1091,13 +1091,36 @@ public class Instagram {
         });
     }
 
-    public void getUserFollowings(long usernameId, String maxid) {
-        sendRequest("friendships/" + usernameId + "/following/?max_id=" + maxid
-                + "&ig_sig_key_version=" + SIG_KEY_VERSION + "&rank_token=" + session.getRankToken(), null);
+    public void getUserFollowings(long usernameId, String maxId, final com.github.volfor.Callback<FollowersResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.following(usernameId, maxId, SIG_KEY_VERSION, session.getRankToken()).enqueue(new Callback<FollowersResponse>() {
+            @Override
+            public void onResponse(Call<FollowersResponse> call, Response<FollowersResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FollowersResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
-    public void getSelfUsersFollowing() {
-        getUserFollowings(session.getUsernameId(), "");
+    public void getUserFollowings(long usernameId, com.github.volfor.Callback<FollowersResponse> callback) {
+        getUserFollowings(usernameId, "", callback);
+    }
+
+    public void getSelfFollowings(com.github.volfor.Callback<FollowersResponse> callback) {
+        getUserFollowings(session.getUsernameId(), callback);
+    }
+
+    public void getSelfFollowings(String maxId, com.github.volfor.Callback<FollowersResponse> callback) {
+        getUserFollowings(session.getUsernameId(), maxId, callback);
     }
 
     public void unlike(long mediaId) {
@@ -1261,7 +1284,7 @@ public class Instagram {
         String nextMaxId = "";
 
         while (true) {
-            getUserFollowings(usernameId, nextMaxId);
+//            getUserFollowings(usernameId, nextMaxId);
             JsonObject temp = lastJson;
 
             for (Object item : temp.getAsJsonArray("users")) {

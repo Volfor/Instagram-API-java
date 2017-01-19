@@ -162,4 +162,10 @@ public interface ApiService {
     @GET("feed/popular/?people_teaser_supported=1&ranked_content=true")
     Call<PopularFeedResponse> popular(@Query("rank_token") String rankToken);
 
+    @GET("friendships/{usernameId}/following/")
+    Call<FollowersResponse> following(@Path("usernameId") long usernameId,
+                                      @Query("max_id") String maxId,
+                                      @Query("ig_sig_key_version") String sigKeyVersion,
+                                      @Query("rank_token") String rankToken);
+
 }
