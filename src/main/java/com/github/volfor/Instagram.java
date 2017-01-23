@@ -1331,8 +1331,28 @@ public class Instagram {
         });
     }
 
-    public void getLikedMedia(String maxid) {
-        sendRequest("feed/liked/?max_id=" + maxid, null);
+    public void getLikedMedia(String maxId, final com.github.volfor.Callback<LikedFeedResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.liked(maxId).enqueue(new Callback<LikedFeedResponse>() {
+            @Override
+            public void onResponse(Call<LikedFeedResponse> call, Response<LikedFeedResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<LikedFeedResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
+    }
+
+    public void getLikedMedia(com.github.volfor.Callback<LikedFeedResponse> callback) {
+        getLikedMedia("", callback);
     }
 
     public void deleteMedia(long mediaId) {
@@ -1466,7 +1486,7 @@ public class Instagram {
         List<Object> likedItems = new ArrayList<>();
 
         for (int i = 0; i < scanRate; i++) {
-            getLikedMedia(nextId);
+//            getLikedMedia(nextId);
             JsonObject temp = lastJson;
             nextId = temp.get("next_max_id").getAsString();
 

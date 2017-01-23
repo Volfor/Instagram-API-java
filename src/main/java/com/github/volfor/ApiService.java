@@ -213,4 +213,7 @@ public interface ApiService {
                                       @Field("ig_sig_key_version") String sigKeyVersion,
                                       @Field("signed_body") String signedBody);
 
+    @GET("feed/liked/")
+    Call<LikedFeedResponse> liked(@Query("max_id") String maxId);
+
 }
