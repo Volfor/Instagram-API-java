@@ -1152,8 +1152,24 @@ public class Instagram {
                 });
     }
 
-    public void getMediaComments(long mediaId) {
-        sendRequest("media/" + mediaId + "/comments/?", null);
+    public void getMediaComments(long mediaId, final com.github.volfor.Callback<MediaCommentsResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
+        service.comments(mediaId).enqueue(new Callback<MediaCommentsResponse>() {
+            @Override
+            public void onResponse(Call<MediaCommentsResponse> call, Response<MediaCommentsResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MediaCommentsResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void setNameAndPhone(String name, String phone) {
@@ -1411,6 +1427,10 @@ public class Instagram {
         }
 
         return false;
+    }
+
+    public Session getSession() {
+        return session;
     }
 
 }

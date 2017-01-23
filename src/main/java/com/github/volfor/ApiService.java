@@ -174,4 +174,7 @@ public interface ApiService {
                           @Field("ig_sig_key_version") String sigKeyVersion,
                           @Field("signed_body") String signedBody);
 
+    @GET("media/{mediaId}/comments/?")
+    Call<MediaCommentsResponse> comments(@Path("mediaId") long mediaId);
+
 }
