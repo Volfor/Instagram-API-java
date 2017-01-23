@@ -177,4 +177,9 @@ public interface ApiService {
     @GET("media/{mediaId}/comments/?")
     Call<MediaCommentsResponse> comments(@Path("mediaId") long mediaId);
 
+    @FormUrlEncoded
+    @POST("accounts/set_phone_and_name/")
+    Call<Response> phoneName(@Field("ig_sig_key_version") String sigKeyVersion,
+                             @Field("signed_body") String signedBody);
+
 }

@@ -1172,7 +1172,11 @@ public class Instagram {
         });
     }
 
-    public void setNameAndPhone(String name, String phone) {
+    public void setNameAndPhone(String name, String phone,
+                                final com.github.volfor.Callback<com.github.volfor.responses.Response> callback) {
+
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
@@ -1180,7 +1184,21 @@ public class Instagram {
         data.addProperty("phone_number", phone);
         data.addProperty("_csrftoken", session.getToken());
 
-        sendRequest("accounts/set_phone_and_name/", generateSignature(data));
+        service.phoneName(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<com.github.volfor.responses.Response>() {
+            @Override
+            public void onResponse(Call<com.github.volfor.responses.Response> call, Response<com.github.volfor.responses.Response> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<com.github.volfor.responses.Response> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getDirectShare() {
