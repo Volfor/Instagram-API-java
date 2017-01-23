@@ -227,4 +227,9 @@ public interface ApiService {
     Call<Response> changePassword(@Field("ig_sig_key_version") String sigKeyVersion,
                                   @Field("signed_body") String signedBody);
 
+    @FormUrlEncoded
+    @POST("accounts/remove_profile_picture/")
+    Call<ProfileDataResponse> removeProfilePic(@Field("ig_sig_key_version") String sigKeyVersion,
+                                               @Field("signed_body") String signedBody);
+
 }
