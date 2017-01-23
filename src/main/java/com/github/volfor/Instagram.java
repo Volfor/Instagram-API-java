@@ -1441,22 +1441,54 @@ public class Instagram {
         });
     }
 
-    public void setPrivateAccount() {
+    public void setPrivateAccount(final com.github.volfor.Callback<ProfileData> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
 
-        sendRequest("accounts/set_private/", generateSignature(data));
+        service.setPrivate(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<ProfileDataResponse>() {
+            @Override
+            public void onResponse(Call<ProfileDataResponse> call, Response<ProfileDataResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body().getProfileData());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ProfileDataResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
-    public void setPublicAccount() {
+    public void setPublicAccount(final com.github.volfor.Callback<ProfileData> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
 
-        sendRequest("accounts/set_public/", generateSignature(data));
+        service.setPublic(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<ProfileDataResponse>() {
+            @Override
+            public void onResponse(Call<ProfileDataResponse> call, Response<ProfileDataResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body().getProfileData());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ProfileDataResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     /* TODO check this features */

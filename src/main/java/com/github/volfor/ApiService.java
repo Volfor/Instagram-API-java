@@ -232,4 +232,14 @@ public interface ApiService {
     Call<ProfileDataResponse> removeProfilePic(@Field("ig_sig_key_version") String sigKeyVersion,
                                                @Field("signed_body") String signedBody);
 
+    @FormUrlEncoded
+    @POST("accounts/set_private/")
+    Call<ProfileDataResponse> setPrivate(@Field("ig_sig_key_version") String sigKeyVersion,
+                                         @Field("signed_body") String signedBody);
+
+    @FormUrlEncoded
+    @POST("accounts/set_public/")
+    Call<ProfileDataResponse> setPublic(@Field("ig_sig_key_version") String sigKeyVersion,
+                                        @Field("signed_body") String signedBody);
+
 }
