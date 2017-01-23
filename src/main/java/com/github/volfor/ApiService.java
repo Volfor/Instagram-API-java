@@ -222,4 +222,9 @@ public interface ApiService {
                                           @Field("ig_sig_key_version") String sigKeyVersion,
                                           @Field("signed_body") String signedBody);
 
+    @FormUrlEncoded
+    @POST("accounts/change_password/")
+    Call<Response> changePassword(@Field("ig_sig_key_version") String sigKeyVersion,
+                                  @Field("signed_body") String signedBody);
+
 }
