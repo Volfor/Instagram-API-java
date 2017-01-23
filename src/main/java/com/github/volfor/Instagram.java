@@ -3,7 +3,6 @@ package com.github.volfor;
 import com.github.volfor.models.*;
 import com.github.volfor.responses.*;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import okhttp3.*;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -36,8 +35,6 @@ public class Instagram {
     private String username;
     private String password;
     private boolean isLoggedIn;
-
-    public JsonObject lastJson;
 
     private Session session = new Session();
 
@@ -1489,143 +1486,6 @@ public class Instagram {
                 callback.onFailure(t);
             }
         });
-    }
-
-    /* TODO check this features */
-
-    public List<Object> getTotalFollowers(long usernameId) {
-        List<Object> followers = new ArrayList<>();
-        String nextMaxId = "";
-
-        while (true) {
-//            getUserFollowers(usernameId, nextMaxId);
-            JsonObject temp = lastJson;
-
-            for (Object item : temp.getAsJsonArray("users")) {
-                followers.add(item);
-            }
-
-            if (!temp.get("big_list").getAsBoolean()) {
-                return followers;
-            }
-
-            nextMaxId = temp.get("next_max_id").getAsString();
-        }
-    }
-
-    public List<Object> getTotalFollowings(long usernameId) {
-        List<Object> followers = new ArrayList<>();
-        String nextMaxId = "";
-
-        while (true) {
-//            getUserFollowings(usernameId, nextMaxId);
-            JsonObject temp = lastJson;
-
-            for (Object item : temp.getAsJsonArray("users")) {
-                followers.add(item);
-            }
-
-            if (!temp.get("big_list").getAsBoolean()) {
-                return followers;
-            }
-
-            nextMaxId = temp.get("next_max_id").getAsString();
-        }
-    }
-
-    public List<Object> getTotalUserFeed(long usernameId, String minTimestamp) {
-        List<Object> userFeed = new ArrayList<>();
-        String nextMaxId = "";
-
-        while (true) {
-//            getUserFeed(usernameId, nextMaxId, minTimestamp);
-            JsonObject temp = lastJson;
-
-            for (Object item : temp.getAsJsonArray("items")) {
-                userFeed.add(item);
-            }
-
-            if (!temp.get("more_available").getAsBoolean()) {
-                return userFeed;
-            }
-
-            nextMaxId = temp.get("next_max_id").getAsString();
-        }
-    }
-
-    public List<Object> getTotalSelfUserFeed(String minTimestamp) {
-        return getTotalUserFeed(session.getUsernameId(), minTimestamp);
-    }
-
-    public List<Object> getTotalSelfFollowers() {
-        return getTotalFollowers(session.getUsernameId());
-    }
-
-    public List<Object> getTotalSelfFollowings() {
-        return getTotalFollowings(session.getUsernameId());
-    }
-
-    public List<Object> getTotalLikedMedia(int scanRate) {
-        scanRate = 1;
-        String nextId = "";
-        List<Object> likedItems = new ArrayList<>();
-
-        for (int i = 0; i < scanRate; i++) {
-//            getLikedMedia(nextId);
-            JsonObject temp = lastJson;
-            nextId = temp.get("next_max_id").getAsString();
-
-            for (Object item : temp.getAsJsonArray("items")) {
-                likedItems.add(item);
-            }
-        }
-
-        return likedItems;
-    }
-
-    public void syncFromAdressBook(JsonObject contacts) {
-        sendRequest("address_book/link/?include=extra_display_name,thumbnails", "contacts=" + contacts.toString());
-    }
-
-    private boolean sendRequest(String endpoint, String post) {
-        endpoint = API_URL + endpoint;
-
-        Request request = new Request.Builder()
-                .header("Connection", "close")
-                .header("Accept", "*/*")
-                .header("Content-type", "application/x-www-form-urlencoded; charset=UTF-8")
-                .header("Cookie2", "$Version=1")
-                .header("Accept-Language", "en-US")
-                .header("User-Agent", USER_AGENT)
-                .url(endpoint)
-                .build();
-
-        if (post != null) { //POST
-            request = request.newBuilder()
-                    .post(RequestBody.create(MediaType.parse("application/x-www-form-urlencoded; charset=UTF-8"), post))
-                    .build();
-        }
-
-        try {
-            okhttp3.Response response = retrofit.callFactory().newCall(request).execute();
-            String body = response.body().string();
-            if (response.code() == 200) {
-                lastJson = (JsonObject) new JsonParser().parse(body);
-
-                System.out.println(response.code() + ": " + body);
-                return true;
-            } else {
-                System.err.println(response.code() + ": " + body);
-
-                if (!isLoggedIn) {
-                    throw new NotLoggedInException();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return false;
     }
 
     public Session getSession() {
