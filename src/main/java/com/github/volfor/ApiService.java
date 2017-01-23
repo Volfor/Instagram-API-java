@@ -216,4 +216,10 @@ public interface ApiService {
     @GET("feed/liked/")
     Call<LikedFeedResponse> liked(@Query("max_id") String maxId);
 
+    @FormUrlEncoded
+    @POST("media/{id}/delete/")
+    Call<MediaDeleteResponse> deleteMedia(@Path("id") String mediaId,
+                                          @Field("ig_sig_key_version") String sigKeyVersion,
+                                          @Field("signed_body") String signedBody);
+
 }

@@ -1355,7 +1355,9 @@ public class Instagram {
         getLikedMedia("", callback);
     }
 
-    public void deleteMedia(long mediaId) {
+    public void deleteMedia(long mediaId, final com.github.volfor.Callback<MediaDeleteResponse> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         String id = String.format("%s_%s", mediaId, session.getUsernameId());
 
         JsonObject data = new JsonObject();
@@ -1364,7 +1366,21 @@ public class Instagram {
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("media_id", id);
 
-        sendRequest("media/" + id + "/delete/", generateSignature(data));
+        service.deleteMedia(id, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<MediaDeleteResponse>() {
+            @Override
+            public void onResponse(Call<MediaDeleteResponse> call, Response<MediaDeleteResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MediaDeleteResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void changePassword(String newPassword) {
