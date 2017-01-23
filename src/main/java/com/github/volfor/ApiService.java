@@ -182,4 +182,10 @@ public interface ApiService {
     Call<Response> phoneName(@Field("ig_sig_key_version") String sigKeyVersion,
                              @Field("signed_body") String signedBody);
 
+    @FormUrlEncoded
+    @POST("friendships/create/{userId}/")
+    Call<FriendshipResponse> follow(@Path("userId") long userId,
+                                    @Field("ig_sig_key_version") String sigKeyVersion,
+                                    @Field("signed_body") String signedBody);
+
 }

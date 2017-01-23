@@ -1201,18 +1201,30 @@ public class Instagram {
         });
     }
 
-    public void getDirectShare() {
-        sendRequest("direct_share/inbox/?", null);
-    }
+    public void follow(long userId, final com.github.volfor.Callback<FriendshipStatus> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
 
-    public void follow(long userId) {
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("user_id", userId);
         data.addProperty("_csrftoken", session.getToken());
 
-        sendRequest("friendships/create/" + userId + "/", generateSignature(data));
+        service.follow(userId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<FriendshipResponse>() {
+            @Override
+            public void onResponse(Call<FriendshipResponse> call, Response<FriendshipResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body().getFriendshipStatus());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FriendshipResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void unfollow(long userId) {
