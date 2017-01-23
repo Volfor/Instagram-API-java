@@ -1227,44 +1227,108 @@ public class Instagram {
         });
     }
 
-    public void unfollow(long userId) {
+    public void unfollow(long userId, final com.github.volfor.Callback<FriendshipStatus> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("user_id", userId);
         data.addProperty("_csrftoken", session.getToken());
 
-        sendRequest("friendships/destroy/" + userId + "/", generateSignature(data));
+        service.unfollow(userId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<FriendshipResponse>() {
+            @Override
+            public void onResponse(Call<FriendshipResponse> call, Response<FriendshipResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body().getFriendshipStatus());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FriendshipResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
-    public void block(long userId) {
+    public void block(long userId, final com.github.volfor.Callback<FriendshipStatus> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("user_id", userId);
         data.addProperty("_csrftoken", session.getToken());
 
-        sendRequest("friendships/block/" + userId + "/", generateSignature(data));
+        service.block(userId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<FriendshipResponse>() {
+            @Override
+            public void onResponse(Call<FriendshipResponse> call, Response<FriendshipResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body().getFriendshipStatus());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FriendshipResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
-    public void unblock(long userId) {
+    public void unblock(long userId, final com.github.volfor.Callback<FriendshipStatus> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("user_id", userId);
         data.addProperty("_csrftoken", session.getToken());
 
-        sendRequest("friendships/unblock/" + userId + "/", generateSignature(data));
+        service.unblock(userId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<FriendshipResponse>() {
+            @Override
+            public void onResponse(Call<FriendshipResponse> call, Response<FriendshipResponse> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body().getFriendshipStatus());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FriendshipResponse> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
-    public void userFriendship(long userId) {
+    public void userFriendship(long userId, final com.github.volfor.Callback<FriendshipStatus> callback) {
+        if (callback == null) throw new NullPointerException("callback == null");
+
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("user_id", userId);
         data.addProperty("_csrftoken", session.getToken());
 
-        sendRequest("friendships/show/" + userId + "/", generateSignature(data));
+        service.friendship(userId, SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<FriendshipStatus>() {
+            @Override
+            public void onResponse(Call<FriendshipStatus> call, Response<FriendshipStatus> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onFailure(new Throwable(parseErrorMessage(response.errorBody())));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FriendshipStatus> call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 
     public void getLikedMedia(String maxid) {

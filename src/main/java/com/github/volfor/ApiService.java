@@ -1,5 +1,6 @@
 package com.github.volfor;
 
+import com.github.volfor.models.FriendshipStatus;
 import com.github.volfor.responses.*;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
@@ -187,5 +188,29 @@ public interface ApiService {
     Call<FriendshipResponse> follow(@Path("userId") long userId,
                                     @Field("ig_sig_key_version") String sigKeyVersion,
                                     @Field("signed_body") String signedBody);
+
+    @FormUrlEncoded
+    @POST("friendships/destroy/{userId}/")
+    Call<FriendshipResponse> unfollow(@Path("userId") long userId,
+                                      @Field("ig_sig_key_version") String sigKeyVersion,
+                                      @Field("signed_body") String signedBody);
+
+    @FormUrlEncoded
+    @POST("friendships/block/{userId}/")
+    Call<FriendshipResponse> block(@Path("userId") long userId,
+                                   @Field("ig_sig_key_version") String sigKeyVersion,
+                                   @Field("signed_body") String signedBody);
+
+    @FormUrlEncoded
+    @POST("friendships/unblock/{userId}/")
+    Call<FriendshipResponse> unblock(@Path("userId") long userId,
+                                     @Field("ig_sig_key_version") String sigKeyVersion,
+                                     @Field("signed_body") String signedBody);
+
+    @FormUrlEncoded
+    @POST("friendships/show/{userId}/")
+    Call<FriendshipStatus> friendship(@Path("userId") long userId,
+                                      @Field("ig_sig_key_version") String sigKeyVersion,
+                                      @Field("signed_body") String signedBody);
 
 }
