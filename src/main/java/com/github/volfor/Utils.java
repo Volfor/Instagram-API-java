@@ -1,21 +1,22 @@
 package com.github.volfor;
 
-import com.github.volfor.helpers.Json;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import okhttp3.Cookie;
+import okhttp3.ResponseBody;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.github.volfor.Constants.IG_SIG_KEY;
-import static com.github.volfor.Constants.SIG_KEY_VERSION;
 
 class Utils {
 
@@ -29,17 +30,13 @@ class Utils {
         return "android-" + getHexdigest(seed, volatileSeed).substring(0, 16);
     }
 
-    static String generateSignature(Json data) {
-        String dataString = data.toJSONString();
-
+    static String generateSignature(JsonObject data) {
         try {
-            String encodedData = URLEncoder.encode(dataString, "UTF-8");
-
             Mac hmac = Mac.getInstance("HmacSHA256");
             hmac.init(new SecretKeySpec(IG_SIG_KEY.getBytes("UTF-8"), "HmacSHA256"));
-            String encodedHex = bytesToHex(hmac.doFinal(dataString.getBytes("UTF-8")));
+            String encodedHex = bytesToHex(hmac.doFinal(data.toString().getBytes("UTF-8")));
 
-            return "ig_sig_key_version=" + SIG_KEY_VERSION + "&signed_body=" + encodedHex + "." + encodedData;
+            return encodedHex + "." + data.toString();
         } catch (UnsupportedEncodingException | NoSuchAlgorithmException | InvalidKeyException e) {
             e.printStackTrace();
         }
@@ -47,7 +44,7 @@ class Utils {
         return "";
     }
 
-    public static String bytesToHex(byte[] bytes) {
+    static String bytesToHex(byte[] bytes) {
         final char[] hexArray = "0123456789ABCDEF".toCharArray();
         char[] hexChars = new char[bytes.length * 2];
 
@@ -83,7 +80,7 @@ class Utils {
         return sb.toString();
     }
 
-    static Cookie getCookie(List<Cookie> cookies, String name) {
+    static Cookie getCookie(Set<Cookie> cookies, String name) {
         for (Cookie c : cookies) {
             if (c != null && c.name().equals(name)) {
                 return c;
@@ -103,6 +100,16 @@ class Utils {
         }
 
         return s;
+    }
+
+    static String parseErrorMessage(ResponseBody errorBody) {
+        try {
+            JsonObject error = (JsonObject) new JsonParser().parse(errorBody.string());
+            return error.get("message").getAsString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
     }
 
 }
