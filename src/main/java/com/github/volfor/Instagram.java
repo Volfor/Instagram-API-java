@@ -332,6 +332,24 @@ public class Instagram {
         });
     }
 
+    public void like(long mediaId) {
+        JsonObject data = new JsonObject();
+        data.addProperty("_uuid", session.getUuid());
+        data.addProperty("_uid", session.getUsernameId());
+        data.addProperty("_csrftoken", session.getToken());
+        data.addProperty("media_id", mediaId);
+
+        try {
+            Response response = service.like(mediaId, SIG_KEY_VERSION, generateSignature(data)).execute();
+            if (!response.isSuccessful()) {
+                LOG.logp(Level.WARNING, LOG.getName(), "getv2Inbox",
+                        "Liking media #" + mediaId + " failed with message: " + parseErrorMessage(response.errorBody()));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void like(long mediaId, final com.github.volfor.Callback<com.github.volfor.responses.Response> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
