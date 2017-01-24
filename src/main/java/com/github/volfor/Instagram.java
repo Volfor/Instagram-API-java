@@ -128,15 +128,11 @@ public class Instagram {
 
                                     session.setLoggedInUser(response.body().getLoggedInUser());
 
-                                    try {
-                                        syncFeatures();
-                                        autocompleteUserList();
-                                        timelineFeed();
-                                        getv2Inbox();
-                                        getRecentActivity();
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
+                                    syncFeatures();
+                                    autocompleteUserList();
+                                    timelineFeed();
+                                    getv2Inbox();
+                                    getRecentActivity();
 
                                     callback.onSuccess(session);
                                 }
@@ -158,7 +154,7 @@ public class Instagram {
         }
     }
 
-    private void syncFeatures() throws IOException {
+    private void syncFeatures() {
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
@@ -166,11 +162,21 @@ public class Instagram {
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("experiments", EXPERIMENTS);
 
-        Response<ResponseBody> response = service.sync(SIG_KEY_VERSION, generateSignature(data)).execute();
-        if (!response.isSuccessful()) {
-            LOG.logp(Level.WARNING, LOG.getName(), "syncFeatures",
-                    "Syncing features failed with message: " + parseErrorMessage(response.errorBody()));
-        }
+        service.sync(SIG_KEY_VERSION, generateSignature(data)).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (!response.isSuccessful()) {
+                    LOG.logp(Level.WARNING, LOG.getName(), "syncFeatures",
+                            "Syncing features failed with message: " + parseErrorMessage(response.errorBody()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                LOG.logp(Level.WARNING, LOG.getName(), "syncFeatures",
+                        "Syncing features failed with message: " + t.getMessage());
+            }
+        });
     }
 
     public void syncFeatures(final com.github.volfor.Callback<List<Experiment>> callback) {
@@ -200,12 +206,22 @@ public class Instagram {
         });
     }
 
-    private void autocompleteUserList() throws IOException {
-        Response response = service.autocompleteUserList().execute();
-        if (!response.isSuccessful()) {
-            LOG.logp(Level.WARNING, LOG.getName(), "autoCompleteUserList",
-                    "Getting autocomplete user list failed with message: " + parseErrorMessage(response.errorBody()));
-        }
+    private void autocompleteUserList() {
+        service.autocompleteUserList().enqueue(new Callback<AutocompleteUserListResponse>() {
+            @Override
+            public void onResponse(Call<AutocompleteUserListResponse> call, Response<AutocompleteUserListResponse> response) {
+                if (!response.isSuccessful()) {
+                    LOG.logp(Level.WARNING, LOG.getName(), "autoCompleteUserList",
+                            "Getting autocomplete user list failed with message: " + parseErrorMessage(response.errorBody()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<AutocompleteUserListResponse> call, Throwable t) {
+                LOG.logp(Level.WARNING, LOG.getName(), "autoCompleteUserList",
+                        "Getting autocomplete user list failed with message: " + t.getMessage());
+            }
+        });
     }
 
     public void autocompleteUserList(final com.github.volfor.Callback<AutocompleteUserListResponse> callback) {
@@ -228,12 +244,22 @@ public class Instagram {
         });
     }
 
-    private void timelineFeed() throws IOException {
-        Response response = service.timeline(session.getRankToken()).execute();
-        if (!response.isSuccessful()) {
-            LOG.logp(Level.WARNING, LOG.getName(), "timelineFeed",
-                    "Getting timeline feed failed with message: " + parseErrorMessage(response.errorBody()));
-        }
+    private void timelineFeed() {
+        service.timeline(session.getRankToken()).enqueue(new Callback<TimelineFeedResponse>() {
+            @Override
+            public void onResponse(Call<TimelineFeedResponse> call, Response<TimelineFeedResponse> response) {
+                if (!response.isSuccessful()) {
+                    LOG.logp(Level.WARNING, LOG.getName(), "timelineFeed",
+                            "Getting timeline feed failed with message: " + parseErrorMessage(response.errorBody()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<TimelineFeedResponse> call, Throwable t) {
+                LOG.logp(Level.WARNING, LOG.getName(), "timelineFeed",
+                        "Getting timeline feed failed with message: " + t.getMessage());
+            }
+        });
     }
 
     public void timelineFeed(final com.github.volfor.Callback<TimelineFeedResponse> callback) {
@@ -256,12 +282,22 @@ public class Instagram {
         });
     }
 
-    private void getv2Inbox() throws IOException {
-        Response response = service.directv2Inbox().execute();
-        if (!response.isSuccessful()) {
-            LOG.logp(Level.WARNING, LOG.getName(), "getv2Inbox",
-                    "Getting direct v2 inbox failed with message: " + parseErrorMessage(response.errorBody()));
-        }
+    private void getv2Inbox() {
+        service.directv2Inbox().enqueue(new Callback<V2InboxResponse>() {
+            @Override
+            public void onResponse(Call<V2InboxResponse> call, Response<V2InboxResponse> response) {
+                if (!response.isSuccessful()) {
+                    LOG.logp(Level.WARNING, LOG.getName(), "getv2Inbox",
+                            "Getting direct v2 inbox failed with message: " + parseErrorMessage(response.errorBody()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<V2InboxResponse> call, Throwable t) {
+                LOG.logp(Level.WARNING, LOG.getName(), "getv2Inbox",
+                        "Getting direct v2 inbox failed with message: " + t.getMessage());
+            }
+        });
     }
 
     public void getv2Inbox(final com.github.volfor.Callback<V2InboxResponse> callback) {
@@ -284,12 +320,22 @@ public class Instagram {
         });
     }
 
-    private void getRecentActivity() throws IOException {
-        Response response = service.newsInbox().execute();
-        if (!response.isSuccessful()) {
-            LOG.logp(Level.WARNING, LOG.getName(), "getRecentActivity",
-                    "Getting recent activity failed with message: " + parseErrorMessage(response.errorBody()));
-        }
+    private void getRecentActivity() {
+        service.newsInbox().enqueue(new Callback<RecentActivityResponse>() {
+            @Override
+            public void onResponse(Call<RecentActivityResponse> call, Response<RecentActivityResponse> response) {
+                if (!response.isSuccessful()) {
+                    LOG.logp(Level.WARNING, LOG.getName(), "getRecentActivity",
+                            "Getting recent activity failed with message: " + parseErrorMessage(response.errorBody()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RecentActivityResponse> call, Throwable t) {
+                LOG.logp(Level.WARNING, LOG.getName(), "getRecentActivity",
+                        "Getting recent activity failed with message: " + t.getMessage());
+            }
+        });
     }
 
     public void getRecentActivity(final com.github.volfor.Callback<RecentActivityResponse> callback) {
@@ -332,22 +378,32 @@ public class Instagram {
         });
     }
 
-    public void like(long mediaId) {
+    public void like(final long mediaId) {
         JsonObject data = new JsonObject();
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("media_id", mediaId);
 
-        try {
-            Response response = service.like(mediaId, SIG_KEY_VERSION, generateSignature(data)).execute();
-            if (!response.isSuccessful()) {
-                LOG.logp(Level.WARNING, LOG.getName(), "getv2Inbox",
-                        "Liking media #" + mediaId + " failed with message: " + parseErrorMessage(response.errorBody()));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        service.like(mediaId, SIG_KEY_VERSION, generateSignature(data))
+                .enqueue(new Callback<com.github.volfor.responses.Response>() {
+                    @Override
+                    public void onResponse(Call<com.github.volfor.responses.Response> call,
+                                           Response<com.github.volfor.responses.Response> response) {
+
+                        if (!response.isSuccessful()) {
+                            LOG.logp(Level.WARNING, LOG.getName(), "like",
+                                    "Liking media #" + mediaId + " failed with message: " +
+                                            parseErrorMessage(response.errorBody()));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<com.github.volfor.responses.Response> call, Throwable t) {
+                        LOG.logp(Level.WARNING, LOG.getName(), "like",
+                                "Liking media #" + mediaId + " failed with message: " + t.getMessage());
+                    }
+                });
     }
 
     public void like(long mediaId, final com.github.volfor.Callback<com.github.volfor.responses.Response> callback) {
