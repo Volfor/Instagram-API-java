@@ -1,11 +1,3 @@
-package com.github.volfor.example;
-
-import com.github.volfor.Callback;
-import com.github.volfor.Instagram;
-import com.github.volfor.Session;
-import com.github.volfor.responses.FollowersResponse;
-import com.github.volfor.responses.TagFeedResponse;
-
 public class InstagramSample {
 
     interface OnLoggedInCallback {
