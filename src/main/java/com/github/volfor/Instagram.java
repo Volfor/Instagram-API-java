@@ -31,28 +31,17 @@ public class Instagram {
 
     private ApiService service;
     private Retrofit retrofit;
+    private OkHttpClient httpClient;
 
-    private String username;
-    private String password;
     private boolean isLoggedIn;
-
     private Session session = new Session();
 
-    public Instagram(String username, String password) {
-        setup(username, password, null);
+    public Instagram() {
+        setup();
     }
 
-    public Instagram(String username, String password, Proxy proxy) {
-        // proxy = new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved("host", "port"));
-        setup(username, password, proxy);
-    }
-
-    private void setup(String username, String password, Proxy proxy) {
-        this.username = username;
-        this.password = password;
-        session.setDeviceId(generateDeviceId(getHexdigest(username, password)));
-
-        OkHttpClient httpClient = new OkHttpClient.Builder()
+    private void setup() {
+        httpClient = new OkHttpClient.Builder()
 //                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
                 .addInterceptor(new AddCookiesInterceptor(session.getCookies()))
                 .cookieJar(new CookieJar() {
@@ -86,8 +75,10 @@ public class Instagram {
                 })
                 .build();
 
-        if (proxy != null) httpClient = httpClient.newBuilder().proxy(proxy).build();
+        setupRetrofit(httpClient);
+    }
 
+    private void setupRetrofit(OkHttpClient httpClient) {
         retrofit = new Retrofit.Builder()
                 .baseUrl(Constants.API_URL)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -97,8 +88,18 @@ public class Instagram {
         service = retrofit.create(ApiService.class);
     }
 
-    public void login(boolean force, final com.github.volfor.Callback<Session> callback) {
+    // proxy = new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved("host", "port"));
+    public void setProxy(Proxy proxy) {
+        httpClient = httpClient.newBuilder().proxy(proxy).build();
+        setupRetrofit(httpClient);
+    }
+
+    public void login(final String username, final String password, boolean force,
+                      final com.github.volfor.Callback<Session> callback) {
+
         if (callback == null) throw new NullPointerException("callback == null");
+
+        session.setDeviceId(generateDeviceId(getHexdigest(username, password)));
 
         if (!isLoggedIn || force) {
             service.fetchHeaders(generateUUID(false)).enqueue(new Callback<ResponseBody>() {
@@ -839,7 +840,7 @@ public class Instagram {
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
-        data.addProperty("username", username);
+        data.addProperty("username", session.getLoggedInUser().getUsername());
         data.addProperty("email", profile.getEmail());
         if (profile.getUrl() != null) data.addProperty("external_url", profile.getUrl());
         if (profile.getPhone() != null) data.addProperty("phone_number", profile.getPhone());
@@ -1454,7 +1455,7 @@ public class Instagram {
         });
     }
 
-    public void changePassword(String newPassword,
+    public void changePassword(String oldPassword, String newPassword,
                                final com.github.volfor.Callback<com.github.volfor.responses.Response> callback) {
 
         if (callback == null) throw new NullPointerException("callback == null");
@@ -1463,7 +1464,7 @@ public class Instagram {
         data.addProperty("_uuid", session.getUuid());
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
-        data.addProperty("old_password", password);
+        data.addProperty("old_password", oldPassword);
         data.addProperty("new_password1", newPassword);
         data.addProperty("new_password2", newPassword);
 
