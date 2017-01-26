@@ -6,14 +6,14 @@ import com.github.volfor.Session;
 import com.github.volfor.responses.FollowersResponse;
 import com.github.volfor.responses.TagFeedResponse;
 
-public class Main {
+public class InstagramSample {
 
     interface OnLoggedInCallback {
         void onLoggedIn();
     }
 
     public static void main(String[] args) {
-        final Instagram instagram = new Instagram("username", "password");
+        final Instagram instagram = new Instagram();
 
         final OnLoggedInCallback callback = new OnLoggedInCallback() {
             @Override
@@ -48,7 +48,7 @@ public class Main {
             }
         };
 
-        instagram.login(false, new Callback<Session>() {
+        instagram.login("username", "password", false, new Callback<Session>() {
             @Override
             public void onSuccess(Session session) {
                 System.out.println("Welcome back, " + session.getLoggedInUser().getUsername());
