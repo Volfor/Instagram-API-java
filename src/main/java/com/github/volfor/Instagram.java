@@ -504,6 +504,7 @@ public class Instagram {
                                    Response<com.github.volfor.responses.Response> response) {
 
                 if (response.isSuccessful()) {
+                    isLoggedIn = false;
                     session.close();
                     callback.onSuccess(response.body());
                 } else {
