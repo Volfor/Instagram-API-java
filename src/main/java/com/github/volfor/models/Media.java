@@ -98,7 +98,7 @@ public class Media {
     private boolean commentLikesEnabled;
 
     @Data
-    class ImageVersions2 {
+    public class ImageVersions2 {
         private List<Picture> candidates;
     }
 
