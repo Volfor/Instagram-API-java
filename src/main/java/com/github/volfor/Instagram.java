@@ -242,7 +242,11 @@ public class Instagram {
     }
 
     public List<User> autocompleteUserList() throws IOException {
-        return service.autocompleteUserList().execute().body().getUsers();
+        Response<AutocompleteUserListResponse> response = service.autocompleteUserList().execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getUsers();
     }
 
     public void autocompleteUserList(final com.github.volfor.Callback<AutocompleteUserListResponse> callback) {
