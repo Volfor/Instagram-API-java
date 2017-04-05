@@ -16,6 +16,7 @@ public class Session {
     private Set<Cookie> cookies = new HashSet<>();
     private User loggedInUser;
     private String uuid = generateUUID(true);
+    private String adid = generateUUID(true);
     private String deviceId;
 
     public Session() {

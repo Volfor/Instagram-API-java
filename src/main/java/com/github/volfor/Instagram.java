@@ -96,35 +96,35 @@ public class Instagram {
         setupRetrofit(httpClient);
     }
 
-    public void enableHttpLogging() {
-        httpClient = httpClient.newBuilder()
-                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
-                .build();
-        setupRetrofit(httpClient);
-    }
-
-    public void disableHttpLogging() {
-        httpClient = httpClient.newBuilder()
-                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.NONE))
-                .build();
+    public void setHttpLogging(boolean enabled) {
+        OkHttpClient.Builder builder = httpClient.newBuilder();
+        if (enabled) {
+            builder.addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY));
+        } else {
+            builder.addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.NONE));
+        }
+        httpClient = builder.build();
         setupRetrofit(httpClient);
     }
 
     public void login(String username, String password) throws IOException {
         session.setDeviceId(generateDeviceId(getHexdigest(username, password)));
 
-        Response fetchHeadersResponse = service.fetchHeaders(generateUUID(false)).execute();
-        if (!fetchHeadersResponse.isSuccessful()) {
-            throw new IOException(fetchHeadersResponse.errorBody().string());
+        try {
+            syncFeatures();
+            service.fetchHeaders(generateUUID(false)).execute();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         JsonObject data = new JsonObject();
         data.addProperty("phone_id", generateUUID(true));
         data.addProperty("username", username);
         data.addProperty("guid", session.getUuid());
+        data.addProperty("adid", session.getAdid());
         data.addProperty("device_id", session.getDeviceId());
         data.addProperty("password", password);
-        data.addProperty("login_attempt_count", "0");
+        data.addProperty("login_attempt_count", 0);
 
         Call<LoginResponse> login = service.login(SIG_KEY_VERSION, generateSignature(data));
         Response<LoginResponse> response = login.execute();
@@ -137,18 +137,18 @@ public class Instagram {
                 .loadForRequest(login.request().url()));
 
         session.setLoggedInUser(response.body().getLoggedInUser());
-
-        syncFeatures();
-        autocompleteUserList();
-        timelineFeed();
-        getv2Inbox();
-        getRecentActivity();
     }
 
     public void login(final String username, final String password, final com.github.volfor.Callback<Session> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
         session.setDeviceId(generateDeviceId(getHexdigest(username, password)));
+        try {
+            syncFeatures();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         service.fetchHeaders(generateUUID(false)).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -173,16 +173,6 @@ public class Instagram {
                                         .loadForRequest(call.request().url()));
 
                                 session.setLoggedInUser(response.body().getLoggedInUser());
-
-                                try {
-                                    syncFeatures();
-                                    autocompleteUserList();
-                                    timelineFeed();
-                                    getv2Inbox();
-                                    getRecentActivity();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
 
                                 callback.onSuccess(session);
                             }
@@ -270,13 +260,17 @@ public class Instagram {
     }
 
     public TimelineFeedResponse timelineFeed() throws IOException {
-        return service.timeline(session.getRankToken()).execute().body();
+        Response<TimelineFeedResponse> response = service.timeline(session.getRankToken(), System.currentTimeMillis()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void timelineFeed(final com.github.volfor.Callback<TimelineFeedResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.timeline(session.getRankToken()).enqueue(new Callback<TimelineFeedResponse>() {
+        service.timeline(session.getRankToken(), System.currentTimeMillis()).enqueue(new Callback<TimelineFeedResponse>() {
             @Override
             public void onResponse(Call<TimelineFeedResponse> call, Response<TimelineFeedResponse> response) {
                 if (response.isSuccessful()) {
@@ -294,13 +288,17 @@ public class Instagram {
     }
 
     public V2InboxResponse getv2Inbox() throws IOException {
-        return service.directv2Inbox().execute().body();
+        Response<V2InboxResponse> response = service.directv2Inbox(System.currentTimeMillis()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getv2Inbox(final com.github.volfor.Callback<V2InboxResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.directv2Inbox().enqueue(new Callback<V2InboxResponse>() {
+        service.directv2Inbox(System.currentTimeMillis()).enqueue(new Callback<V2InboxResponse>() {
             @Override
             public void onResponse(Call<V2InboxResponse> call, Response<V2InboxResponse> response) {
                 if (response.isSuccessful()) {
@@ -318,13 +316,17 @@ public class Instagram {
     }
 
     public RecentActivityResponse getRecentActivity() throws IOException {
-        return service.newsInbox().execute().body();
+        Response<RecentActivityResponse> response = service.newsInbox(System.currentTimeMillis()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getRecentActivity(final com.github.volfor.Callback<RecentActivityResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.newsInbox().enqueue(new Callback<RecentActivityResponse>() {
+        service.newsInbox(System.currentTimeMillis()).enqueue(new Callback<RecentActivityResponse>() {
             @Override
             public void onResponse(Call<RecentActivityResponse> call, Response<RecentActivityResponse> response) {
                 if (response.isSuccessful()) {
@@ -342,7 +344,11 @@ public class Instagram {
     }
 
     public TagFeedResponse getFeedByTag(String tag) throws IOException {
-        return service.tagFeed(tag, session.getRankToken()).execute().body();
+        Response<TagFeedResponse> response = service.tagFeed(tag, session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getFeedByTag(String tag, final com.github.volfor.Callback<TagFeedResponse> callback) {
@@ -405,13 +411,17 @@ public class Instagram {
     }
 
     public FollowersResponse getUserFollowers(long userId, String maxId) throws IOException {
-        return service.followers(userId, session.getRankToken(), maxId).execute().body();
+        Response<FollowersResponse> response = service.followers(userId, session.getRankToken(), maxId, System.currentTimeMillis()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getUserFollowers(long userId, String maxId, final com.github.volfor.Callback<FollowersResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.followers(userId, session.getRankToken(), maxId).enqueue(new Callback<FollowersResponse>() {
+        service.followers(userId, session.getRankToken(), maxId, System.currentTimeMillis()).enqueue(new Callback<FollowersResponse>() {
             @Override
             public void onResponse(Call<FollowersResponse> call, Response<FollowersResponse> response) {
                 if (response.isSuccessful()) {
@@ -428,24 +438,24 @@ public class Instagram {
         });
     }
 
-    public void getUserFollowers(long userId) throws IOException {
-        getUserFollowers(userId, "");
+    public FollowersResponse getUserFollowers(long userId) throws IOException {
+        return getUserFollowers(userId, "");
     }
 
     public void getUserFollowers(long userId, com.github.volfor.Callback<FollowersResponse> callback) {
         getUserFollowers(userId, "", callback);
     }
 
-    public void getSelfFollowers() throws IOException {
-        getUserFollowers(session.getUsernameId());
+    public FollowersResponse getSelfFollowers() throws IOException {
+        return getUserFollowers(session.getUsernameId());
     }
 
     public void getSelfFollowers(com.github.volfor.Callback<FollowersResponse> callback) {
         getUserFollowers(session.getUsernameId(), callback);
     }
 
-    public void getSelfFollowers(String maxId) throws IOException {
-        getUserFollowers(session.getUsernameId(), maxId);
+    public FollowersResponse getSelfFollowers(String maxId) throws IOException {
+        return getUserFollowers(session.getUsernameId(), maxId);
     }
 
     public void getSelfFollowers(String maxId, com.github.volfor.Callback<FollowersResponse> callback) {
@@ -460,7 +470,11 @@ public class Instagram {
         params.put("device_id", session.getDeviceId());
         params.put("_csrftoken", session.getToken());
 
-        return service.megaphone(params).execute().body().isSuccess();
+        Response<MegaphoneLogResponse> response = service.megaphone(params, System.currentTimeMillis()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().isSuccess();
     }
 
     public void megaphoneLog(final com.github.volfor.Callback<MegaphoneLogResponse> callback) {
@@ -473,7 +487,7 @@ public class Instagram {
         params.put("device_id", session.getDeviceId());
         params.put("_csrftoken", session.getToken());
 
-        service.megaphone(params).enqueue(new Callback<MegaphoneLogResponse>() {
+        service.megaphone(params, System.currentTimeMillis()).enqueue(new Callback<MegaphoneLogResponse>() {
             @Override
             public void onResponse(Call<MegaphoneLogResponse> call, Response<MegaphoneLogResponse> response) {
                 if (response.isSuccessful()) {
@@ -492,9 +506,10 @@ public class Instagram {
 
     public void logout() throws IOException {
         Response response = service.logout().execute();
-        if (response.isSuccessful()) {
-            session.close();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
         }
+        session.close();
     }
 
     public void logout(final com.github.volfor.Callback<com.github.volfor.responses.Response> callback) {
@@ -657,7 +672,11 @@ public class Instagram {
             throw new IOException(response.errorBody().string());
         }
 
-        expose();
+        try {
+            expose();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         return response.body().getMedia();
     }
@@ -725,7 +744,11 @@ public class Instagram {
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("caption_text", captionText);
 
-        return service.editMedia(mediaId, SIG_KEY_VERSION, generateSignature(data)).execute().body().getMedia();
+        Response<MediaResponse> response = service.editMedia(mediaId, SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getMedia();
     }
 
     public void editMedia(long mediaId, String captionText, final com.github.volfor.Callback<MediaResponse> callback) {
@@ -760,7 +783,11 @@ public class Instagram {
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
 
-        return service.removeUsertag(mediaId, SIG_KEY_VERSION, generateSignature(data)).execute().body().getMedia();
+        Response<MediaResponse> response = service.removeUsertag(mediaId, SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getMedia();
     }
 
     public void removeSelfTag(long mediaId, final com.github.volfor.Callback<MediaResponse> callback) {
@@ -795,7 +822,11 @@ public class Instagram {
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("media_id", mediaId);
 
-        return service.mediaInfo(mediaId, SIG_KEY_VERSION, generateSignature(data)).execute().body();
+        Response<MediaInfoResponse> response = service.mediaInfo(mediaId, SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void mediaInfo(long mediaId, final com.github.volfor.Callback<MediaInfoResponse> callback) {
@@ -831,7 +862,11 @@ public class Instagram {
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("comment_text", commentText);
 
-        return service.comment(mediaId, SIG_KEY_VERSION, generateSignature(data)).execute().body().getComment();
+        Response<CommentResponse> response = service.comment(mediaId, SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getComment();
     }
 
     public void comment(long mediaId, String commentText, final com.github.volfor.Callback<CommentResponse> callback) {
@@ -900,7 +935,11 @@ public class Instagram {
     }
 
     public ExploreResponse explore() throws IOException {
-        return service.explore().execute().body();
+        Response<ExploreResponse> response = service.explore().execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void explore(final com.github.volfor.Callback<ExploreResponse> callback) {
@@ -929,7 +968,11 @@ public class Instagram {
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
 
-        return service.profile(SIG_KEY_VERSION, generateSignature(data)).execute().body().getProfileData();
+        Response<ProfileDataResponse> response = service.profile(SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getProfileData();
     }
 
     public void getProfileData(final com.github.volfor.Callback<ProfileData> callback) {
@@ -970,7 +1013,11 @@ public class Instagram {
         if (profile.getBiography() != null) data.addProperty("biography", profile.getBiography());
         if (profile.getGender() != null) data.addProperty("gender", profile.getGender());
 
-        return service.editProfile(SIG_KEY_VERSION, generateSignature(data)).execute().body().getProfileData();
+        Response<ProfileDataResponse> response = service.editProfile(SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getProfileData();
     }
 
     public void editProfile(Profile profile, final com.github.volfor.Callback<ProfileData> callback) {
@@ -1006,7 +1053,11 @@ public class Instagram {
     }
 
     public User getUserInfo(long usernameId) throws IOException {
-        return service.userInfo(usernameId).execute().body().getUser();
+        Response<UserInfoResponse> response = service.userInfo(usernameId).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getUser();
     }
 
     public void getUserInfo(long usernameId, final com.github.volfor.Callback<User> callback) {
@@ -1038,7 +1089,11 @@ public class Instagram {
     }
 
     public FollowingRecentActivityResponse getFollowingRecentActivity() throws IOException {
-        return service.news().execute().body();
+        Response<FollowingRecentActivityResponse> response = service.news().execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getFollowingRecentActivity(final com.github.volfor.Callback<FollowingRecentActivityResponse> callback) {
@@ -1062,7 +1117,11 @@ public class Instagram {
     }
 
     public UsertagsResponse getUsertags(long usernameId) throws IOException {
-        return service.usertags(usernameId, session.getRankToken()).execute().body();
+        Response<UsertagsResponse> response = service.usertags(usernameId, session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getUsertags(long usernameId, final com.github.volfor.Callback<UsertagsResponse> callback) {
@@ -1094,7 +1153,11 @@ public class Instagram {
     }
 
     public List<User> getMediaLikers(long mediaId) throws IOException {
-        return service.likers(mediaId).execute().body().getUsers();
+        Response<MediaLikersResponse> response = service.likers(mediaId).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getUsers();
     }
 
     public void getMediaLikers(long mediaId, final com.github.volfor.Callback<MediaLikersResponse> callback) {
@@ -1118,7 +1181,11 @@ public class Instagram {
     }
 
     public List<GeoMedia> getGeoMedia(long usernameId) throws IOException {
-        return service.geoMedia(usernameId).execute().body().getGeoMedia();
+        Response<GeoMediaResponse> response = service.geoMedia(usernameId).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getGeoMedia();
     }
 
     public void getGeoMedia(long usernameId, final com.github.volfor.Callback<List<GeoMedia>> callback) {
@@ -1150,7 +1217,11 @@ public class Instagram {
     }
 
     public FbSearchResponse fbUserSearch(String query) throws IOException {
-        return service.fbSearch(query, session.getRankToken()).execute().body();
+        Response<FbSearchResponse> response = service.fbSearch(query, session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void fbUserSearch(String query, final com.github.volfor.Callback<FbSearchResponse> callback) {
@@ -1174,7 +1245,11 @@ public class Instagram {
     }
 
     public SearchUserResponse searchUsers(String query) throws IOException {
-        return service.searchUser(SIG_KEY_VERSION, query, session.getRankToken()).execute().body();
+        Response<SearchUserResponse> response = service.searchUser(SIG_KEY_VERSION, query, session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void searchUsers(String query, final com.github.volfor.Callback<SearchUserResponse> callback) {
@@ -1198,7 +1273,11 @@ public class Instagram {
     }
 
     public User searchUsername(String username) throws IOException {
-        return service.search(username).execute().body().getUser();
+        Response<UserInfoResponse> response = service.search(username).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getUser();
     }
 
     public void searchUsername(String username, final com.github.volfor.Callback<User> callback) {
@@ -1222,7 +1301,11 @@ public class Instagram {
     }
 
     public List<Tag> searchTags(String query) throws IOException {
-        return service.searchTags(query, session.getRankToken()).execute().body().getResults();
+        Response<SearchTagResponse> response = service.searchTags(query, session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getResults();
     }
 
     public void searchTags(String query, final com.github.volfor.Callback<SearchTagResponse> callback) {
@@ -1246,7 +1329,11 @@ public class Instagram {
     }
 
     public UserFeedResponse getUserFeed(long usernameId, String maxId, long minTimestamp) throws IOException {
-        return service.feed(usernameId, maxId, minTimestamp, session.getRankToken()).execute().body();
+        Response<UserFeedResponse> response = service.feed(usernameId, maxId, minTimestamp, session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getUserFeed(long usernameId, String maxId, long minTimestamp,
@@ -1280,7 +1367,11 @@ public class Instagram {
     }
 
     public TagFeedResponse getHashtagFeed(String hashtag, String maxId) throws IOException {
-        return service.hashtagFeed(hashtag, maxId, session.getRankToken()).execute().body();
+        Response<TagFeedResponse> response = service.hashtagFeed(hashtag, maxId, session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getHashtagFeed(String hashtag, String maxId, final com.github.volfor.Callback<TagFeedResponse> callback) {
@@ -1304,7 +1395,11 @@ public class Instagram {
     }
 
     public List<LocationItem> searchLocation(String query) throws IOException {
-        return service.fbSearchLocation(query, session.getRankToken()).execute().body().getItems();
+        Response<SearchLocationResponse> response = service.fbSearchLocation(query, session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getItems();
     }
 
     public void searchLocation(String query, final com.github.volfor.Callback<SearchLocationResponse> callback) {
@@ -1328,7 +1423,11 @@ public class Instagram {
     }
 
     public LocationFeedResponse getLocationFeed(long locationId, String maxId) throws IOException {
-        return service.locationFeed(locationId, maxId, session.getRankToken()).execute().body();
+        Response<LocationFeedResponse> response = service.locationFeed(locationId, maxId, session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getLocationFeed(long locationId, String maxId, final com.github.volfor.Callback<LocationFeedResponse> callback) {
@@ -1352,7 +1451,11 @@ public class Instagram {
     }
 
     public PopularFeedResponse getPopularFeed() throws IOException {
-        return service.popular(session.getRankToken()).execute().body();
+        Response<PopularFeedResponse> response = service.popular(session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getPopularFeed(final com.github.volfor.Callback<PopularFeedResponse> callback) {
@@ -1376,7 +1479,11 @@ public class Instagram {
     }
 
     public FollowersResponse getUserFollowings(long usernameId, String maxId) throws IOException {
-        return service.following(usernameId, maxId, SIG_KEY_VERSION, session.getRankToken()).execute().body();
+        Response<FollowersResponse> response = service.following(usernameId, maxId, SIG_KEY_VERSION, session.getRankToken()).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getUserFollowings(long usernameId, String maxId, final com.github.volfor.Callback<FollowersResponse> callback) {
@@ -1463,7 +1570,11 @@ public class Instagram {
     }
 
     public MediaCommentsResponse getMediaComments(long mediaId) throws IOException {
-        return service.comments(mediaId).execute().body();
+        Response<MediaCommentsResponse> response = service.comments(mediaId).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getMediaComments(long mediaId, final com.github.volfor.Callback<MediaCommentsResponse> callback) {
@@ -1533,7 +1644,11 @@ public class Instagram {
         data.addProperty("user_id", userId);
         data.addProperty("_csrftoken", session.getToken());
 
-        return service.follow(userId, SIG_KEY_VERSION, generateSignature(data)).execute().body().getFriendshipStatus();
+        Response<FriendshipResponse> response = service.follow(userId, SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getFriendshipStatus();
     }
 
     public void follow(long userId, final com.github.volfor.Callback<FriendshipStatus> callback) {
@@ -1569,7 +1684,11 @@ public class Instagram {
         data.addProperty("user_id", userId);
         data.addProperty("_csrftoken", session.getToken());
 
-        return service.unfollow(userId, SIG_KEY_VERSION, generateSignature(data)).execute().body().getFriendshipStatus();
+        Response<FriendshipResponse> response = service.unfollow(userId, SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getFriendshipStatus();
     }
 
     public void unfollow(long userId, final com.github.volfor.Callback<FriendshipStatus> callback) {
@@ -1605,7 +1724,11 @@ public class Instagram {
         data.addProperty("user_id", userId);
         data.addProperty("_csrftoken", session.getToken());
 
-        return service.block(userId, SIG_KEY_VERSION, generateSignature(data)).execute().body().getFriendshipStatus();
+        Response<FriendshipResponse> response = service.block(userId, SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getFriendshipStatus();
     }
 
     public void block(long userId, final com.github.volfor.Callback<FriendshipStatus> callback) {
@@ -1641,7 +1764,11 @@ public class Instagram {
         data.addProperty("user_id", userId);
         data.addProperty("_csrftoken", session.getToken());
 
-        return service.unblock(userId, SIG_KEY_VERSION, generateSignature(data)).execute().body().getFriendshipStatus();
+        Response<FriendshipResponse> response = service.unblock(userId, SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getFriendshipStatus();
     }
 
     public void unblock(long userId, final com.github.volfor.Callback<FriendshipStatus> callback) {
@@ -1677,7 +1804,11 @@ public class Instagram {
         data.addProperty("user_id", userId);
         data.addProperty("_csrftoken", session.getToken());
 
-        return service.friendship(userId, SIG_KEY_VERSION, generateSignature(data)).execute().body();
+        Response<FriendshipStatus> response = service.friendship(userId, SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void userFriendship(long userId, final com.github.volfor.Callback<FriendshipStatus> callback) {
@@ -1707,7 +1838,11 @@ public class Instagram {
     }
 
     public LikedFeedResponse getLikedMedia(String maxId) throws IOException {
-        return service.liked(maxId).execute().body();
+        Response<LikedFeedResponse> response = service.liked(maxId).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body();
     }
 
     public void getLikedMedia(String maxId, final com.github.volfor.Callback<LikedFeedResponse> callback) {
@@ -1747,7 +1882,11 @@ public class Instagram {
         data.addProperty("_csrftoken", session.getToken());
         data.addProperty("media_id", id);
 
-        return service.deleteMedia(id, SIG_KEY_VERSION, generateSignature(data)).execute().body().isDidDelete();
+        Response<MediaDeleteResponse> response = service.deleteMedia(id, SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().isDidDelete();
     }
 
     public void deleteMedia(long mediaId, final com.github.volfor.Callback<MediaDeleteResponse> callback) {
@@ -1829,7 +1968,11 @@ public class Instagram {
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
 
-        return service.removeProfilePic(SIG_KEY_VERSION, generateSignature(data)).execute().body().getProfileData();
+        Response<ProfileDataResponse> response = service.removeProfilePic(SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getProfileData();
     }
 
     public void removeProfilePicture(final com.github.volfor.Callback<ProfileData> callback) {
@@ -1863,7 +2006,11 @@ public class Instagram {
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
 
-        return service.setPrivate(SIG_KEY_VERSION, generateSignature(data)).execute().body().getProfileData();
+        Response<ProfileDataResponse> response = service.setPrivate(SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getProfileData();
     }
 
     public void setPrivateAccount(final com.github.volfor.Callback<ProfileData> callback) {
@@ -1897,7 +2044,11 @@ public class Instagram {
         data.addProperty("_uid", session.getUsernameId());
         data.addProperty("_csrftoken", session.getToken());
 
-        return service.setPublic(SIG_KEY_VERSION, generateSignature(data)).execute().body().getProfileData();
+        Response<ProfileDataResponse> response = service.setPublic(SIG_KEY_VERSION, generateSignature(data)).execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().string());
+        }
+        return response.body().getProfileData();
     }
 
     public void setPublicAccount(final com.github.volfor.Callback<ProfileData> callback) {

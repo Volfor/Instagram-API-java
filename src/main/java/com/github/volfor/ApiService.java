@@ -26,13 +26,14 @@ public interface ApiService {
     Call<AutocompleteUserListResponse> autocompleteUserList();
 
     @GET("feed/timeline/?ranked_content=true")
-    Call<TimelineFeedResponse> timeline(@Query("rank_token") String rankToken);
+    Call<TimelineFeedResponse> timeline(@Query("rank_token") String rankToken,
+                                        @Query("min_timestamp") long minTimestamp);
 
     @GET("direct_v2/inbox/?")
-    Call<V2InboxResponse> directv2Inbox();
+    Call<V2InboxResponse> directv2Inbox(@Query("min_timestamp") long minTimestamp);
 
     @GET("news/inbox/?")
-    Call<RecentActivityResponse> newsInbox();
+    Call<RecentActivityResponse> newsInbox(@Query("min_timestamp") long minTimestamp);
 
     @GET("feed/tag/{tag}/?ranked_content=true")
     Call<TagFeedResponse> tagFeed(@Path("tag") String tag, @Query("rank_token") String rankToken);
@@ -46,11 +47,12 @@ public interface ApiService {
     @GET("friendships/{userId}/followers/")
     Call<FollowersResponse> followers(@Path("userId") long userId,
                                       @Query("rank_token") String rankToken,
-                                      @Query("max_id") String maxId);
+                                      @Query("max_id") String maxId,
+                                      @Query("min_timestamp") long minTimestamp);
 
     @FormUrlEncoded
     @POST("megaphone/log/")
-    Call<MegaphoneLogResponse> megaphone(@FieldMap Map<String, String> params);
+    Call<MegaphoneLogResponse> megaphone(@FieldMap Map<String, String> params, @Query("min_timestamp") long minTimestamp);
 
     @GET("accounts/logout/")
     Call<Response> logout();
