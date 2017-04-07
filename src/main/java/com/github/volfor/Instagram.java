@@ -1328,20 +1328,18 @@ public class Instagram {
         });
     }
 
-    public UserFeedResponse getUserFeed(long usernameId, String maxId, long minTimestamp) throws IOException {
-        Response<UserFeedResponse> response = service.feed(usernameId, maxId, minTimestamp, session.getRankToken()).execute();
+    public UserFeedResponse getUserFeed(long userId, String maxId) throws IOException {
+        Response<UserFeedResponse> response = service.feed(userId, session.getRankToken(), maxId, System.currentTimeMillis()).execute();
         if (!response.isSuccessful()) {
             throw new IOException(response.errorBody().string());
         }
         return response.body();
     }
 
-    public void getUserFeed(long usernameId, String maxId, long minTimestamp,
-                            final com.github.volfor.Callback<UserFeedResponse> callback) {
-
+    public void getUserFeed(long userId, String maxId, final com.github.volfor.Callback<UserFeedResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.feed(usernameId, maxId, minTimestamp, session.getRankToken()).enqueue(new Callback<UserFeedResponse>() {
+        service.feed(userId, session.getRankToken(), maxId, System.currentTimeMillis()).enqueue(new Callback<UserFeedResponse>() {
             @Override
             public void onResponse(Call<UserFeedResponse> call, Response<UserFeedResponse> response) {
                 if (response.isSuccessful()) {
@@ -1358,12 +1356,12 @@ public class Instagram {
         });
     }
 
-    public UserFeedResponse getSelfFeed(String maxId, long minTimestamp) throws IOException {
-        return getUserFeed(session.getUsernameId(), maxId, minTimestamp);
+    public UserFeedResponse getSelfFeed(String maxId) throws IOException {
+        return getUserFeed(session.getUsernameId(), maxId);
     }
 
-    public void getSelfFeed(String maxId, long minTimestamp, com.github.volfor.Callback<UserFeedResponse> callback) {
-        getUserFeed(session.getUsernameId(), maxId, minTimestamp, callback);
+    public void getSelfFeed(String maxId, com.github.volfor.Callback<UserFeedResponse> callback) {
+        getUserFeed(session.getUsernameId(), maxId, callback);
     }
 
     public TagFeedResponse getHashtagFeed(String hashtag, String maxId) throws IOException {

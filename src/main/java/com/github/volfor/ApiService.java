@@ -143,11 +143,11 @@ public interface ApiService {
     @GET("tags/search/?is_typeahead=true")
     Call<SearchTagResponse> searchTags(@Query("q") String query, @Query("rank_token") String rankToken);
 
-    @GET("feed/user/{usernameId}/?ranked_content=true")
-    Call<UserFeedResponse> feed(@Path("usernameId") long usernameId,
+    @GET("feed/user/{userId}/?ranked_content=true")
+    Call<UserFeedResponse> feed(@Path("userId") long userId,
+                                @Query("rank_token") String rankToken,
                                 @Query("max_id") String maxId,
-                                @Query("min_timestamp") long minTimestamp,
-                                @Query("rank_token") String rankToken);
+                                @Query("min_timestamp") long minTimestamp);
 
     @GET("feed/tag/{hashtag}/?ranked_content=true")
     Call<TagFeedResponse> hashtagFeed(@Path("hashtag") String hashtag,
