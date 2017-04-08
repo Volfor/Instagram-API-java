@@ -25,8 +25,6 @@ import java.util.logging.Logger;
 import static com.github.volfor.Constants.*;
 import static com.github.volfor.Utils.*;
 
-import retrofit2.Response;
-
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class Instagram {
 
@@ -232,7 +230,7 @@ public class Instagram {
     }
 
     public List<User> autocompleteUserList() throws IOException {
-        Response<AutocompleteUserListResponse> response = service.autocompleteUserList().execute();
+        Response<AutocompleteUserListResponse> response = service.autocompleteUserList(session.getRankToken()).execute();
         if (!response.isSuccessful()) {
             throw new IOException(response.errorBody().string());
         }
@@ -242,7 +240,7 @@ public class Instagram {
     public void autocompleteUserList(final com.github.volfor.Callback<AutocompleteUserListResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.autocompleteUserList().enqueue(new Callback<AutocompleteUserListResponse>() {
+        service.autocompleteUserList(session.getRankToken()).enqueue(new Callback<AutocompleteUserListResponse>() {
             @Override
             public void onResponse(Call<AutocompleteUserListResponse> call, Response<AutocompleteUserListResponse> response) {
                 if (response.isSuccessful()) {
@@ -260,7 +258,7 @@ public class Instagram {
     }
 
     public TimelineFeedResponse timelineFeed() throws IOException {
-        Response<TimelineFeedResponse> response = service.timeline(session.getRankToken(), System.currentTimeMillis()).execute();
+        Response<TimelineFeedResponse> response = service.timeline(session.getRankToken()).execute();
         if (!response.isSuccessful()) {
             throw new IOException(response.errorBody().string());
         }
@@ -270,7 +268,7 @@ public class Instagram {
     public void timelineFeed(final com.github.volfor.Callback<TimelineFeedResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.timeline(session.getRankToken(), System.currentTimeMillis()).enqueue(new Callback<TimelineFeedResponse>() {
+        service.timeline(session.getRankToken()).enqueue(new Callback<TimelineFeedResponse>() {
             @Override
             public void onResponse(Call<TimelineFeedResponse> call, Response<TimelineFeedResponse> response) {
                 if (response.isSuccessful()) {
@@ -288,7 +286,7 @@ public class Instagram {
     }
 
     public V2InboxResponse getv2Inbox() throws IOException {
-        Response<V2InboxResponse> response = service.directv2Inbox(System.currentTimeMillis()).execute();
+        Response<V2InboxResponse> response = service.directv2Inbox(session.getRankToken()).execute();
         if (!response.isSuccessful()) {
             throw new IOException(response.errorBody().string());
         }
@@ -298,7 +296,7 @@ public class Instagram {
     public void getv2Inbox(final com.github.volfor.Callback<V2InboxResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.directv2Inbox(System.currentTimeMillis()).enqueue(new Callback<V2InboxResponse>() {
+        service.directv2Inbox(session.getRankToken()).enqueue(new Callback<V2InboxResponse>() {
             @Override
             public void onResponse(Call<V2InboxResponse> call, Response<V2InboxResponse> response) {
                 if (response.isSuccessful()) {
@@ -316,7 +314,7 @@ public class Instagram {
     }
 
     public RecentActivityResponse getRecentActivity() throws IOException {
-        Response<RecentActivityResponse> response = service.newsInbox(System.currentTimeMillis()).execute();
+        Response<RecentActivityResponse> response = service.newsInbox(session.getRankToken()).execute();
         if (!response.isSuccessful()) {
             throw new IOException(response.errorBody().string());
         }
@@ -326,7 +324,7 @@ public class Instagram {
     public void getRecentActivity(final com.github.volfor.Callback<RecentActivityResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.newsInbox(System.currentTimeMillis()).enqueue(new Callback<RecentActivityResponse>() {
+        service.newsInbox(session.getRankToken()).enqueue(new Callback<RecentActivityResponse>() {
             @Override
             public void onResponse(Call<RecentActivityResponse> call, Response<RecentActivityResponse> response) {
                 if (response.isSuccessful()) {
@@ -411,7 +409,7 @@ public class Instagram {
     }
 
     public FollowersResponse getUserFollowers(long userId, String maxId) throws IOException {
-        Response<FollowersResponse> response = service.followers(userId, session.getRankToken(), maxId, System.currentTimeMillis()).execute();
+        Response<FollowersResponse> response = service.followers(userId, session.getRankToken(), maxId).execute();
         if (!response.isSuccessful()) {
             throw new IOException(response.errorBody().string());
         }
@@ -421,7 +419,7 @@ public class Instagram {
     public void getUserFollowers(long userId, String maxId, final com.github.volfor.Callback<FollowersResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.followers(userId, session.getRankToken(), maxId, System.currentTimeMillis()).enqueue(new Callback<FollowersResponse>() {
+        service.followers(userId, session.getRankToken(), maxId).enqueue(new Callback<FollowersResponse>() {
             @Override
             public void onResponse(Call<FollowersResponse> call, Response<FollowersResponse> response) {
                 if (response.isSuccessful()) {
@@ -470,7 +468,7 @@ public class Instagram {
         params.put("device_id", session.getDeviceId());
         params.put("_csrftoken", session.getToken());
 
-        Response<MegaphoneLogResponse> response = service.megaphone(params, System.currentTimeMillis()).execute();
+        Response<MegaphoneLogResponse> response = service.megaphone(params, session.getRankToken()).execute();
         if (!response.isSuccessful()) {
             throw new IOException(response.errorBody().string());
         }
@@ -487,7 +485,7 @@ public class Instagram {
         params.put("device_id", session.getDeviceId());
         params.put("_csrftoken", session.getToken());
 
-        service.megaphone(params, System.currentTimeMillis()).enqueue(new Callback<MegaphoneLogResponse>() {
+        service.megaphone(params, session.getRankToken()).enqueue(new Callback<MegaphoneLogResponse>() {
             @Override
             public void onResponse(Call<MegaphoneLogResponse> call, Response<MegaphoneLogResponse> response) {
                 if (response.isSuccessful()) {
@@ -1328,18 +1326,18 @@ public class Instagram {
         });
     }
 
-    public UserFeedResponse getUserFeed(long userId, String maxId) throws IOException {
-        Response<UserFeedResponse> response = service.feed(userId, session.getRankToken(), maxId, System.currentTimeMillis()).execute();
+    public UserFeedResponse getUserFeed(long userId, String maxId, long minTimestamp) throws IOException {
+        Response<UserFeedResponse> response = service.feed(userId, session.getRankToken(), maxId, minTimestamp).execute();
         if (!response.isSuccessful()) {
             throw new IOException(response.errorBody().string());
         }
         return response.body();
     }
 
-    public void getUserFeed(long userId, String maxId, final com.github.volfor.Callback<UserFeedResponse> callback) {
+    public void getUserFeed(long userId, String maxId, long minTimestamp, final com.github.volfor.Callback<UserFeedResponse> callback) {
         if (callback == null) throw new NullPointerException("callback == null");
 
-        service.feed(userId, session.getRankToken(), maxId, System.currentTimeMillis()).enqueue(new Callback<UserFeedResponse>() {
+        service.feed(userId, session.getRankToken(), maxId, minTimestamp).enqueue(new Callback<UserFeedResponse>() {
             @Override
             public void onResponse(Call<UserFeedResponse> call, Response<UserFeedResponse> response) {
                 if (response.isSuccessful()) {
@@ -1354,6 +1352,22 @@ public class Instagram {
                 callback.onFailure(t);
             }
         });
+    }
+
+    public UserFeedResponse getUserFeed(long userId, String maxId) throws IOException {
+        return getUserFeed(userId, maxId, 0);
+    }
+
+    public void getUserFeed(long userId, String maxId, com.github.volfor.Callback<UserFeedResponse> callback) {
+        getUserFeed(userId, maxId, 0, callback);
+    }
+
+    public UserFeedResponse getSelfFeed(String maxId, long minTimestamp) throws IOException {
+        return getUserFeed(session.getUsernameId(), maxId, minTimestamp);
+    }
+
+    public void getSelfFeed(String maxId, long minTimestamp, com.github.volfor.Callback<UserFeedResponse> callback) {
+        getUserFeed(session.getUsernameId(), maxId, minTimestamp, callback);
     }
 
     public UserFeedResponse getSelfFeed(String maxId) throws IOException {

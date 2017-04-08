@@ -23,17 +23,16 @@ public interface ApiService {
     Call<ResponseBody> sync(@Field("ig_sig_key_version") String sigKeyVersion, @Field("signed_body") String signedBody);
 
     @GET("friendships/autocomplete_user_list/")
-    Call<AutocompleteUserListResponse> autocompleteUserList();
+    Call<AutocompleteUserListResponse> autocompleteUserList(@Query("rank_token") String rankToken);
 
     @GET("feed/timeline/?ranked_content=true")
-    Call<TimelineFeedResponse> timeline(@Query("rank_token") String rankToken,
-                                        @Query("min_timestamp") long minTimestamp);
+    Call<TimelineFeedResponse> timeline(@Query("rank_token") String rankToken);
 
     @GET("direct_v2/inbox/?")
-    Call<V2InboxResponse> directv2Inbox(@Query("min_timestamp") long minTimestamp);
+    Call<V2InboxResponse> directv2Inbox(@Query("rank_token") String rankToken);
 
     @GET("news/inbox/?")
-    Call<RecentActivityResponse> newsInbox(@Query("min_timestamp") long minTimestamp);
+    Call<RecentActivityResponse> newsInbox(@Query("rank_token") String rankToken);
 
     @GET("feed/tag/{tag}/?ranked_content=true")
     Call<TagFeedResponse> tagFeed(@Path("tag") String tag, @Query("rank_token") String rankToken);
@@ -47,12 +46,11 @@ public interface ApiService {
     @GET("friendships/{userId}/followers/")
     Call<FollowersResponse> followers(@Path("userId") long userId,
                                       @Query("rank_token") String rankToken,
-                                      @Query("max_id") String maxId,
-                                      @Query("min_timestamp") long minTimestamp);
+                                      @Query("max_id") String maxId);
 
     @FormUrlEncoded
     @POST("megaphone/log/")
-    Call<MegaphoneLogResponse> megaphone(@FieldMap Map<String, String> params, @Query("min_timestamp") long minTimestamp);
+    Call<MegaphoneLogResponse> megaphone(@FieldMap Map<String, String> params, @Query("rank_token") String rankToken);
 
     @GET("accounts/logout/")
     Call<Response> logout();

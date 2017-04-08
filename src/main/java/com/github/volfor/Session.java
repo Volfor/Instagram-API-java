@@ -46,7 +46,7 @@ public class Session {
     }
 
     public String getRankToken() {
-        return loggedInUser != null ? String.format("%s_%s", loggedInUser.getPk(), uuid) : "";
+        return loggedInUser != null ? String.format("%s_%s", loggedInUser.getPk(), generateUUID(true)) : "";
     }
 
     public long getUsernameId() {
